@@ -1,0 +1,12 @@
+.streamlit/secrets.toml
+.env
+__pycache__/
+venv/
+.DS_Store
+pull_supabase_data.py
+quant_calculations.py
+test_ingest_pipeline.py
+test_massive_api.py
+test_quant_calculations.py
+test_supabase_api.py
+test_upload_csv.py
