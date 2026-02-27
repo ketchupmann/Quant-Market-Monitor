@@ -5,3 +5,4 @@ supabase==2.3.4
 numpy==1.26.4
 polygon-api-client
 python-dotenv
+httpx==0.27.2
