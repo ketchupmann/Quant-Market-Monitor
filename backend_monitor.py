@@ -1,17 +1,15 @@
 from polygon import RESTClient
+import streamlit as st
 import pandas as pd
 import time
 from datetime import datetime, timedelta 
 from supabase import create_client, Client
-import os
-from dotenv import load_dotenv
 
 
-load_dotenv()
-api_key = os.getenv("POLYGON_API_KEY")
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
+api_key = st.secrets["POLYGON_API_KEY"]
 client = RESTClient(api_key)
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
 

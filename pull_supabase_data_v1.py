@@ -1,15 +1,12 @@
 import pandas as pd
 from supabase import create_client
+import streamlit as st
 import time
 from datetime import datetime, timedelta, timezone 
-import os
-from dotenv import load_dotenv
 from ingest_data import ingest_eod_data, ingest_minute_data
 
-load_dotenv()
-
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 

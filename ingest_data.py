@@ -1,14 +1,11 @@
-import os
 import pandas as pd
-from dotenv import load_dotenv
 from supabase import create_client
+import streamlit as st
 from backend_monitor import get_historic_ticker_data
 
 
-load_dotenv()
-
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
+url = st.secrets["SUPABASE_URL"]
+key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 def ingest_eod_data(ticker: str, start_date: str) -> None: 
