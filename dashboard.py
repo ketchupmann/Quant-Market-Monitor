@@ -272,9 +272,13 @@ else:
     # ROW 1: Candlesticks
     fig.add_trace(go.Candlestick(
         x=df.index,
-        open=df['open'], high=df['high'], low=df['low'], close=df['close'],
+        open=df['open'], 
+        high=df['high'], 
+        low=df['low'], 
+        close=df['close'],
         name='Price',
-        increasing_line_color='#26a69a', decreasing_line_color='#ef5350',
+        increasing=dict(line=dict(color='#26a69a')), 
+        decreasing=dict(line=dict(color='#ef5350')),
         hovertemplate=candle_hover
     ), row=1, col=1)
 
