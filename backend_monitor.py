@@ -1,5 +1,4 @@
 from polygon import RESTClient
-import yfinance as yf
 import pandas as pd
 import time
 from datetime import datetime, timedelta 
@@ -18,9 +17,20 @@ supabase: Client = create_client(url, key)
 
 
 def get_ticker_details(ticker: str) -> dict:
-    '''
-    ADD COMMENTS
-    '''
+    """
+    Fetches fundamental company metadata and branding assets from Massive.
+
+    Parameters:
+    -----------
+    ticker : str
+        The stock symbol to query.
+
+    Returns:
+    --------
+    dict
+        A dictionary containing company details such as full name, market cap,
+        primary exchange, description, and the URL to the company's logo.
+    """
     details = client.get_ticker_details(
 	ticker,)
     if details.branding:
@@ -52,9 +62,21 @@ def get_ticker_details(ticker: str) -> dict:
     }
 
 def get_snapshot_ticker(ticker: str) -> dict:
-    '''
-    ADD COMMENTS
-    '''
+    """
+    Retrieves a real-time (15-minute delayed) snapshot of the current
+    trading day for a specific ticker.
+
+    Parameters:
+    -----------
+    ticker : str
+        The stock symbol to query.
+
+    Returns:
+    --------
+    dict
+        A dictionary containing daily performance metrics (open, high, low, close,
+        volume, vwap, daily change) and the most recent minute-bar statistics.
+    """
     snapshot = client.get_snapshot_ticker("stocks", ticker)
     day = snapshot.day
     latest_min = snapshot.min
@@ -76,7 +98,7 @@ def get_snapshot_ticker(ticker: str) -> dict:
             'min_volume':latest_min.volume,
             'min_vwap':latest_min.vwap,
             'min_transactions':latest_min.transactions,
-            'time':dt_obj.floor('min') #note: Timestamp('whatever-date 00:59:00') = market closed
+            'time':dt_obj.floor('min') 
     }
 
 def get_historic_ticker_data(
@@ -86,21 +108,42 @@ def get_historic_ticker_data(
     end_date: str = None, 
     target_rows: int = None
     ) -> pd.DataFrame: #start/end_date is written as 'YYYY-MM-DD'
-    '''
-    ADD COMMENTS
-    '''
+    """
+    Fetches historical aggregate bars (minute or daily) from the Polygon API.
+    Includes logic to safely estimate required calendar days if a specific
+    target number of trading rows is requested.
+
+    Parameters:
+    -----------
+    ticker : str
+        The stock symbol to query.
+    time_unit : str
+        The timespan multiplier unit (e.g., 'minute', 'day').
+    start_date : str, optional
+        The start date for the query formatted as 'YYYY-MM-DD'.
+    end_date : str, optional
+        The end date for the query formatted as 'YYYY-MM-DD'. Defaults to today.
+    target_rows : int, optional
+        The specific number of trading bars to return. If provided, dynamically calculates 
+        and overrides the start_date to account for weekends and holidays.
+
+    Returns:
+    --------
+    pd.DataFrame
+        A DataFrame indexed by datetime containing OHLCV and VWAP data.
+        Returns an empty DataFrame if no data is found or inputs are invalid.
+    """
     if end_date is None:
         end_date = pd.Timestamp.now(tz='US/Eastern').strftime('%Y-%m-%d')
 
     if target_rows:
-        # We need more calendar days than trading days (weekends/holidays).
+        # need more calendar days than trading days (weekends/holidays).
         # Multiplier 1.65 is safe (252 trading days * 1.65 = ~415 calendar days)
         buffer_days = int(target_rows * 1.65) + 10 
         start_date = end_date - timedelta(days=buffer_days)
         start_date_str = start_date.strftime('%Y-%m-%d')
     
     else:
-        # Use the manually provided start_date
         if start_date is None:
             print("Error: Must provide either start_date or target_rows")
             return pd.DataFrame()
@@ -139,7 +182,6 @@ def get_historic_ticker_data(
         df['ticker'] = ticker
         df.set_index('timestamp', inplace=True)
         df['volume'] = df['volume'].fillna(0).astype(int)
-        #cut to desired length
         if target_rows and len(df) > target_rows:
             df = df.tail(target_rows)
         
@@ -232,22 +274,5 @@ def get_financial_statements(ticker, limit=5):
         "cash": clean_df(cash_data)
     }
 
-
-
-if __name__ == "__main__":
-    
-    #test_cash_flow("TSLA")
-    
-    #print("\n--- Testing History ---")
-    #test_news = get_ticker_news("TSLA")
-    #print(test_news) 
-   
-    
-    # New Test
-    #print("\n--- Testing EOD Price ---")
-    #price_data = get_daily_data("AAPL")
-    #print(price_data)
-
-    print(get_historic_ticker_data('AAPL', 'minute', start_date='2026-02-20', end_date='2026-02-20').head(20))
 
    
