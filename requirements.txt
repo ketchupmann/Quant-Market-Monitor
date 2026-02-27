@@ -1,6 +1,6 @@
 streamlit==1.31.0
 pandas==2.2.0
-plotly==5.18.0
+plotly
 supabase
 numpy==1.26.4
 polygon-api-client
