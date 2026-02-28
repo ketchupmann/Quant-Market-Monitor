@@ -2,6 +2,7 @@ import pandas as pd
 from supabase import create_client
 import streamlit as st
 import time
+import pytz
 from datetime import datetime, timedelta, timezone 
 from ingest_data import ingest_eod_data, ingest_minute_data
 
@@ -34,7 +35,8 @@ def get_eod_ticker_data(
     pd.DataFrame
         A DataFrame containing the EOD data, sorted by date. Returns empty DataFrame on error.
     """
-    today = datetime.now()
+    eastern = pytz.timezone('US/Eastern')
+    today = datetime.now(eastern)
     if one_month:
         start_date = today - pd.DateOffset(months=1)
     elif half_yr:
@@ -153,7 +155,7 @@ def get_minute_ticker_data(ticker: str, one_day: bool = False, one_week: bool = 
             fetch_start_date_str = (now - pd.Timedelta(days=7)).strftime('%Y-%m-%d')
             print(f"⚠️ No minute data for {ticker}. Auto-ingesting full week from {fetch_start_date_str}...")
         else:
-            newest_record = pd.to_datetime(df['timestamp']).max()
+            newest_record = pd.to_datetime(df['timestamp'], utc=True).max()
                 
             # Check Forward Gap:
             if newest_record < now - pd.Timedelta(minutes=16):

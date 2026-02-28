@@ -13,16 +13,6 @@ client = RESTClient(api_key)
 supabase: Client = create_client(url, key)
 
 
-# ==========================================
-# DEBUG TRIPWIRE (Intercepts the hard-crash)
-# ==========================================
-if not str(url).startswith("http"):
-    st.error(f"CRASH AVOIDED: Supabase URL is malformed.")
-    st.warning(f"Streamlit is currently reading your URL as: '{url}'")
-    st.info("Check your Streamlit Cloud Secrets UI for missing 'https://' or weird formatting.")
-    st.stop() # Halts the script safely before Supabase can crash
-
-    
 def get_ticker_details(ticker: str) -> dict:
     """
     Fetches fundamental company metadata and branding assets from Massive.
