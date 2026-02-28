@@ -270,7 +270,7 @@ else:
         volume_hover = "<b>%{x|%b %d, %Y}</b><br>Volume: %{y:,.0f}<extra></extra>"
 
     # ==========================================
-    # PLOTLY X-AXIS SANITIZER
+    # PLOTLY X-AXIS
     # ==========================================
     
     if 'date' in df.columns:
@@ -278,16 +278,20 @@ else:
     elif 'timestamp' in df.columns:
         df.set_index('timestamp', inplace=True)
 
-    else:
-        x_data = df.index
+    
+    x_dates = df.index.tolist()
+    open_prices = df['open'].astype(float).tolist()
+    high_prices = df['high'].astype(float).tolist()
+    low_prices = df['low'].astype(float).tolist()
+    close_prices = df['close'].astype(float).tolist()
 
-    # ROW 1: Candlesticks (Your Original Syntax)
+    # ROW 1: Candlesticks
     fig.add_trace(go.Candlestick(
-        x=x_data,
-        open=df['open'], 
-        high=df['high'], 
-        low=df['low'], 
-        close=df['close'],
+        x=x_dates,
+        open=open_prices, 
+        high=high_prices, 
+        low=low_prices, 
+        close=close_prices,
         name='Price',
         increasing_line_color='#26a69a', 
         decreasing_line_color='#ef5350',
@@ -302,7 +306,7 @@ else:
     if show_vwap and 'vwap' in df.columns:
         fig.add_trace(go.Scatter(x=df.index, y=df['vwap'], name='VWAP', line=dict(color='#ffa726', width=2, dash='dot'), hoverinfo='skip'), row=1, col=1)
 
-    # ROW 2: Volume
+   # ROW 2: Volume
     colors = ['#26a69a' if row['close'] >= row['open'] else '#ef5350' for _, row in df.iterrows()]
     fig.add_trace(go.Bar(
         x=df.index, y=df['volume'],
@@ -336,7 +340,6 @@ else:
 
     fig.update_layout(**layout_update)
     st.plotly_chart(fig, use_container_width=True)
-
 
 # ==========================================
 # COMPACT RISK METRICS CONTAINER
