@@ -11,7 +11,7 @@ supabase_url = st.secrets["SUPABASE_URL"]
 supabase_key = st.secrets["SUPABASE_KEY"]
 
 # --- BACKEND FUNCTIONS ---
-from backend_monitor import get_ticker_details, get_snapshot_ticker
+from backend_monitor import get_ticker_details, get_snapshot_ticker, format_large_number
 from pull_supabase_data_v1 import get_eod_ticker_data, get_minute_ticker_data
 from quant_calculations_v1 import combine_closed_stitcher, get_period_volatility, get_max_drawdown, calculate_sharpe_ratio, calculate_beta_alpha, calculate_correlation_signal, get_correlation_engine, get_rsi, calculate_ema
 
@@ -149,7 +149,7 @@ with top_right:
         st.caption("**Live Market Snapshot (15m Delayed)**")
         col1, col2, col3, col4, col5 = st.columns(5)
         col1.metric("Last Price", f"${snapshot['close']:.2f}", f"{snapshot['todays_change']:.2f} ({snapshot['todays_change_percent']:.2f}%)")
-        col2.metric("Today's Vol", f"{snapshot['volume']:,.0f}")
+        col2.metric("Today's Vol", format_large_number())
         col3.metric("Day High", f"${snapshot['high']:.2f}")
         col4.metric("Day Low", f"${snapshot['low']:.2f}")
         col5.metric("VWAP", f"${snapshot['vwap']:.2f}")
