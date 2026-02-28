@@ -272,30 +272,25 @@ else:
     # ==========================================
     # PLOTLY X-AXIS SANITIZER
     # ==========================================
-    # 1. If the dates are stuck in a column, force them to become the index
+    
     if 'date' in df.columns:
         df.set_index('date', inplace=True)
     elif 'timestamp' in df.columns:
         df.set_index('timestamp', inplace=True)
 
-    # 2. Strip the timezone data (Plotly requires timezone-naive datetimes to render correctly)
-    if isinstance(df.index, pd.DatetimeIndex):
-        df.index = df.index.tz_localize(None)
-    
-    # 3. Ensure chronological order
-    df.sort_index(inplace=True)
-    # ==========================================
-    
-    # ROW 1: Candlesticks
+    else:
+        x_data = df.index
+
+    # ROW 1: Candlesticks (Your Original Syntax)
     fig.add_trace(go.Candlestick(
-        x=df.index,
+        x=x_data,
         open=df['open'], 
         high=df['high'], 
         low=df['low'], 
         close=df['close'],
         name='Price',
-        increasing=dict(line=dict(color='#26a69a')), 
-        decreasing=dict(line=dict(color='#ef5350')),
+        increasing_line_color='#26a69a', 
+        decreasing_line_color='#ef5350',
         hovertemplate=candle_hover
     ), row=1, col=1)
 
