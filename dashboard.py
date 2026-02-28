@@ -275,22 +275,17 @@ else:
     # PLOTLY X-AXIS
     # ==========================================
     
-    # 1. Force X-Axis into Pure Strings (Stops Plotly from trying to auto-scale gaps)
-    if is_intraday:
-        x_axis_labels = df.index.strftime('%b %d, %H:%M').tolist()
-    else:
-        x_axis_labels = df.index.strftime('%b %d, %Y').tolist()
-
-    # 2. Force Y-Axis data into pure floats
+    # 1. Force Y-Axis data into pure floats
     open_p = pd.to_numeric(df['open'], errors='coerce').tolist()
     high_p = pd.to_numeric(df['high'], errors='coerce').tolist()
     low_p = pd.to_numeric(df['low'], errors='coerce').tolist()
     close_p = pd.to_numeric(df['close'], errors='coerce').tolist()
     volumes = pd.to_numeric(df['volume'], errors='coerce').tolist()
 
+    # We now pass df.index directly to x, removing the string conversion
     # ROW 1: Candlesticks
     fig.add_trace(go.Candlestick(
-        x=x_axis_labels, open=open_p, high=high_p, low=low_p, close=close_p,
+        x=df.index, open=open_p, high=high_p, low=low_p, close=close_p,
         name='Price', increasing_line_color='#26a69a', decreasing_line_color='#ef5350',
         hovertemplate=candle_hover
     ), row=1, col=1)
@@ -299,41 +294,48 @@ else:
     if show_ema:
         ema9 = pd.to_numeric(df['EMA_9'], errors='coerce').tolist()
         ema21 = pd.to_numeric(df['EMA_21'], errors='coerce').tolist()
-        fig.add_trace(go.Scatter(x=x_axis_labels, y=ema9, name='EMA 9', line=dict(color='#29b6f6', width=1.5), hoverinfo='skip'), row=1, col=1)
-        fig.add_trace(go.Scatter(x=x_axis_labels, y=ema21, name='EMA 21', line=dict(color='#ab47bc', width=1.5), hoverinfo='skip'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=df.index, y=ema9, name='EMA 9', line=dict(color='#29b6f6', width=1.5), hoverinfo='skip'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=df.index, y=ema21, name='EMA 21', line=dict(color='#ab47bc', width=1.5), hoverinfo='skip'), row=1, col=1)
 
     if show_vwap and 'vwap' in df.columns:
         vwap_v = pd.to_numeric(df['vwap'], errors='coerce').tolist()
-        fig.add_trace(go.Scatter(x=x_axis_labels, y=vwap_v, name='VWAP', line=dict(color='#ffa726', width=2, dash='dot'), hoverinfo='skip'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=df.index, y=vwap_v, name='VWAP', line=dict(color='#ffa726', width=2, dash='dot'), hoverinfo='skip'), row=1, col=1)
 
     # ROW 2: Volume
     colors = ['#26a69a' if c >= o else '#ef5350' for c, o in zip(close_p, open_p)]
     fig.add_trace(go.Bar(
-        x=x_axis_labels, y=volumes, name='Volume', marker_color=colors, opacity=0.8, hovertemplate=volume_hover
+        x=df.index, y=volumes, name='Volume', marker_color=colors, opacity=0.8, hovertemplate=volume_hover
     ), row=2, col=1)
 
     # ROW 3: RSI
     if show_rsi and 'rsi' in df.columns:
         rsi_vals = pd.to_numeric(df['rsi'], errors='coerce').tolist()
-        fig.add_trace(go.Scatter(x=x_axis_labels, y=rsi_vals, name='RSI', line=dict(color='#ab47bc', width=1.5)), row=3, col=1)
-        fig.add_trace(go.Scatter(x=x_axis_labels, y=[70]*len(x_axis_labels), line=dict(color='#ef5350', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
-        fig.add_trace(go.Scatter(x=x_axis_labels, y=[30]*len(x_axis_labels), line=dict(color='#26a69a', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
+        fig.add_trace(go.Scatter(x=df.index, y=rsi_vals, name='RSI', line=dict(color='#ab47bc', width=1.5)), row=3, col=1)
+        fig.add_trace(go.Scatter(x=df.index, y=[70]*len(df.index), line=dict(color='#ef5350', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
+        fig.add_trace(go.Scatter(x=df.index, y=[30]*len(df.index), line=dict(color='#26a69a', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
         fig.update_yaxes(title_text="RSI", range=[0, 100], tickvals=[0, 30, 50, 70, 100], row=3, col=1)
 
-    # --- Formatting Layout ---
-    # Force type='category' to map the strings flawlessly and skip weekends/gaps automatically
+    # --- Formatting Layout & Rangebreaks ---
+    
+    # Define rangebreaks
+    breaks = [dict(bounds=["sat", "mon"])] # Always skip weekends
+    if is_intraday:
+        breaks.append(dict(bounds=[16, 9.5], pattern="hour")) # Skip overnight only for intraday
+
     layout_update = dict(
         height=750 if show_rsi else 600, 
-        template="plotly_dark", margin=dict(l=0, r=0, t=10, b=0), showlegend=False,
-        xaxis=dict(rangeslider_visible=False, type='category', nticks=10),
-        xaxis2=dict(rangeslider_visible=False, type='category', nticks=10)
+        template="plotly_dark", margin=dict(l=0, r=0, t=10, b=0), showlegend=False
     )
-    if show_rsi:
-        layout_update['xaxis3'] = dict(rangeslider_visible=False, type='category', nticks=10)
-
+    
     fig.update_layout(**layout_update)
-    st.plotly_chart(fig, use_container_width=True)
+    
+    # Apply rangebreaks to all x-axes
+    fig.update_xaxes(
+        rangebreaks=breaks,
+        rangeslider_visible=False
+    )
 
+    st.plotly_chart(fig, use_container_width=True)
 # ==========================================
 # COMPACT RISK METRICS CONTAINER
 # ==========================================
