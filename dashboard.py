@@ -185,6 +185,8 @@ with st.spinner(f"Pulling {timeframe} data for {ticker}... (Auto-ingesting if ne
 if df is None or df.empty:
     st.error(f"Failed to load historical database records for {ticker}.")
 else:
+    df = df.copy()
+
     # find the time column ('timestamp' for intraday, 'date' for EOD)
     time_col = 'timestamp' if 'timestamp' in df.columns else 'date' if 'date' in df.columns else None
 
@@ -273,70 +275,61 @@ else:
     # PLOTLY X-AXIS
     # ==========================================
     
-    if 'date' in df.columns:
-        df.set_index('date', inplace=True)
-    elif 'timestamp' in df.columns:
-        df.set_index('timestamp', inplace=True)
+    # 1. Force X-Axis into Pure Strings (Stops Plotly from trying to auto-scale gaps)
+    if is_intraday:
+        x_axis_labels = df.index.strftime('%b %d, %H:%M').tolist()
+    else:
+        x_axis_labels = df.index.strftime('%b %d, %Y').tolist()
 
-    
-    x_dates = df.index.tolist()
-    open_prices = df['open'].astype(float).tolist()
-    high_prices = df['high'].astype(float).tolist()
-    low_prices = df['low'].astype(float).tolist()
-    close_prices = df['close'].astype(float).tolist()
+    # 2. Force Y-Axis data into pure floats
+    open_p = pd.to_numeric(df['open'], errors='coerce').tolist()
+    high_p = pd.to_numeric(df['high'], errors='coerce').tolist()
+    low_p = pd.to_numeric(df['low'], errors='coerce').tolist()
+    close_p = pd.to_numeric(df['close'], errors='coerce').tolist()
+    volumes = pd.to_numeric(df['volume'], errors='coerce').tolist()
 
     # ROW 1: Candlesticks
     fig.add_trace(go.Candlestick(
-        x=x_dates,
-        open=open_prices, 
-        high=high_prices, 
-        low=low_prices, 
-        close=close_prices,
-        name='Price',
-        increasing_line_color='#26a69a', 
-        decreasing_line_color='#ef5350',
+        x=x_axis_labels, open=open_p, high=high_p, low=low_p, close=close_p,
+        name='Price', increasing_line_color='#26a69a', decreasing_line_color='#ef5350',
         hovertemplate=candle_hover
     ), row=1, col=1)
 
     # OVERLAYS
     if show_ema:
-        fig.add_trace(go.Scatter(x=df.index, y=df['EMA_9'], name='EMA 9', line=dict(color='#29b6f6', width=1.5), hoverinfo='skip'), row=1, col=1)
-        fig.add_trace(go.Scatter(x=df.index, y=df['EMA_21'], name='EMA 21', line=dict(color='#ab47bc', width=1.5), hoverinfo='skip'), row=1, col=1)
+        ema9 = pd.to_numeric(df['EMA_9'], errors='coerce').tolist()
+        ema21 = pd.to_numeric(df['EMA_21'], errors='coerce').tolist()
+        fig.add_trace(go.Scatter(x=x_axis_labels, y=ema9, name='EMA 9', line=dict(color='#29b6f6', width=1.5), hoverinfo='skip'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=x_axis_labels, y=ema21, name='EMA 21', line=dict(color='#ab47bc', width=1.5), hoverinfo='skip'), row=1, col=1)
 
     if show_vwap and 'vwap' in df.columns:
-        fig.add_trace(go.Scatter(x=df.index, y=df['vwap'], name='VWAP', line=dict(color='#ffa726', width=2, dash='dot'), hoverinfo='skip'), row=1, col=1)
+        vwap_v = pd.to_numeric(df['vwap'], errors='coerce').tolist()
+        fig.add_trace(go.Scatter(x=x_axis_labels, y=vwap_v, name='VWAP', line=dict(color='#ffa726', width=2, dash='dot'), hoverinfo='skip'), row=1, col=1)
 
-   # ROW 2: Volume
-    colors = ['#26a69a' if row['close'] >= row['open'] else '#ef5350' for _, row in df.iterrows()]
+    # ROW 2: Volume
+    colors = ['#26a69a' if c >= o else '#ef5350' for c, o in zip(close_p, open_p)]
     fig.add_trace(go.Bar(
-        x=df.index, y=df['volume'],
-        name='Volume', marker_color=colors, opacity=0.8,
-        hovertemplate=volume_hover
+        x=x_axis_labels, y=volumes, name='Volume', marker_color=colors, opacity=0.8, hovertemplate=volume_hover
     ), row=2, col=1)
 
-    # ROW 3: RSI (If toggled)
+    # ROW 3: RSI
     if show_rsi and 'rsi' in df.columns:
-        fig.add_trace(go.Scatter(x=df.index, y=df['rsi'], name='RSI (14)', line=dict(color='#ab47bc', width=1.5)), row=3, col=1)
-        fig.add_trace(go.Scatter(x=df.index, y=[70]*len(df), line=dict(color='#ef5350', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
-        fig.add_trace(go.Scatter(x=df.index, y=[30]*len(df), line=dict(color='#26a69a', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
+        rsi_vals = pd.to_numeric(df['rsi'], errors='coerce').tolist()
+        fig.add_trace(go.Scatter(x=x_axis_labels, y=rsi_vals, name='RSI', line=dict(color='#ab47bc', width=1.5)), row=3, col=1)
+        fig.add_trace(go.Scatter(x=x_axis_labels, y=[70]*len(x_axis_labels), line=dict(color='#ef5350', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
+        fig.add_trace(go.Scatter(x=x_axis_labels, y=[30]*len(x_axis_labels), line=dict(color='#26a69a', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
         fig.update_yaxes(title_text="RSI", range=[0, 100], tickvals=[0, 30, 50, 70, 100], row=3, col=1)
 
     # --- Formatting Layout ---
-    x_axes_layout = dict(rangeslider_visible=False, rangebreaks=[dict(bounds=["sat", "mon"])])
-    if is_intraday:
-        x_axes_layout['rangebreaks'].append(dict(bounds=[16, 9.5], pattern="hour"))
-
+    # Force type='category' to map the strings flawlessly and skip weekends/gaps automatically
     layout_update = dict(
         height=750 if show_rsi else 600, 
-        template="plotly_dark",
-        margin=dict(l=0, r=0, t=10, b=0),
-        xaxis=x_axes_layout,
-        showlegend=False
+        template="plotly_dark", margin=dict(l=0, r=0, t=10, b=0), showlegend=False,
+        xaxis=dict(rangeslider_visible=False, type='category', nticks=10),
+        xaxis2=dict(rangeslider_visible=False, type='category', nticks=10)
     )
-    
-    layout_update['xaxis2'] = x_axes_layout
     if show_rsi:
-        layout_update['xaxis3'] = x_axes_layout
+        layout_update['xaxis3'] = dict(rangeslider_visible=False, type='category', nticks=10)
 
     fig.update_layout(**layout_update)
     st.plotly_chart(fig, use_container_width=True)
