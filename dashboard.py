@@ -385,7 +385,11 @@ with st.expander("📂 View Raw Database Records"):
 # PAIRS TRADING & CORRELATION ANALYSIS
 # ==========================================
 if compare_ticker:
-    valid_timeframes = ["6 Months", "1 Year", "5 Years"]
+    if compare_ticker == ticker:
+        st.markdown("---")
+        st.warning(f"⚠️ **Invalid Comparison:** You are already viewing {ticker}. Please enter a different ticker symbol in the sidebar to run the statistical arbitrage analysis.")
+    else:    
+        valid_timeframes = ["6 Months", "1 Year", "5 Years"]
     
     if timeframe not in valid_timeframes:
         st.markdown("---")
