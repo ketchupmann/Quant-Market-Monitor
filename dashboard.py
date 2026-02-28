@@ -269,6 +269,23 @@ else:
         candle_hover = "<b>%{x|%b %d, %Y}</b><br><br>Open: $%{open:.2f}<br>High: $%{high:.2f}<br>Low: $%{low:.2f}<br>Close: $%{close:.2f}<extra></extra>"
         volume_hover = "<b>%{x|%b %d, %Y}</b><br>Volume: %{y:,.0f}<extra></extra>"
 
+    # ==========================================
+    # PLOTLY X-AXIS SANITIZER
+    # ==========================================
+    # 1. If the dates are stuck in a column, force them to become the index
+    if 'date' in df.columns:
+        df.set_index('date', inplace=True)
+    elif 'timestamp' in df.columns:
+        df.set_index('timestamp', inplace=True)
+
+    # 2. Strip the timezone data (Plotly requires timezone-naive datetimes to render correctly)
+    if isinstance(df.index, pd.DatetimeIndex):
+        df.index = df.index.tz_localize(None)
+    
+    # 3. Ensure chronological order
+    df.sort_index(inplace=True)
+    # ==========================================
+    
     # ROW 1: Candlesticks
     fig.add_trace(go.Candlestick(
         x=df.index,
