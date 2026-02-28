@@ -335,7 +335,12 @@ else:
         rangeslider_visible=False
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    # ==========================================
+    # STREAMLIT RENDER (KEY FIX)
+    # ==========================================
+    chart_key = f"main_chart_{ticker}_{timeframe}_{show_rsi}_{show_ema}"
+    st.plotly_chart(fig, use_container_width=True, key=chart_key)
+
 # ==========================================
 # COMPACT RISK METRICS CONTAINER
 # ==========================================
