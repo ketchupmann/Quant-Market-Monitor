@@ -397,15 +397,12 @@ if compare_ticker:
         with st.spinner(f"Fetching {compare_ticker} and generating correlation channel..."):
             
             # FETCH EXTRA DATA
-            fetch_1_yr = (timeframe == "6 Months") # If they want 6mo, fetch 1yr
-            fetch_5_yr = (timeframe in ["1 Year", "5 Years"]) # If they want 1yr or 5yr, fetch 5yr
+            fetch_1_yr = (timeframe == "6 Months") 
+            fetch_5_yr = (timeframe in ["1 Year", "5 Years"]) 
             
-            # Re-fetch the primary ticker with the extra padding
             primary_padded_df = get_eod_ticker_data(
                 ticker, one_month=False, half_yr=False, one_yr=fetch_1_yr, five_yrs=fetch_5_yr
             )
-            
-            # Fetch the comparison ticker with the extra padding
             compare_df = get_eod_ticker_data(
                 compare_ticker, one_month=False, half_yr=False, one_yr=fetch_1_yr, five_yrs=fetch_5_yr
             )
@@ -418,7 +415,6 @@ if compare_ticker:
             if compare_df is None or compare_df.empty or primary_padded_df is None or primary_padded_df.empty:
                 st.warning(f"Could not load sufficient data to calculate correlation.")
             else:
-                # Format primary_padded_df index just like compare_df
                 if 'date' in primary_padded_df.columns:
                     primary_padded_df['date'] = pd.to_datetime(primary_padded_df['date'])
                     primary_padded_df.set_index('date', inplace=True)
@@ -436,14 +432,26 @@ if compare_ticker:
                 else:
                     target_start = today - pd.DateOffset(years=5)
 
-                # Slice both dataframes to strictly start at target_start
                 corr_df = corr_df[corr_df.index >= target_start]
                 aligned_prices = aligned_prices[aligned_prices.index >= target_start]
 
+                # ==========================================
+                # FORCE NUMERIC CONVERSION FOR PLOTLY
+                # ==========================================
+                t_price = pd.to_numeric(aligned_prices[ticker], errors='coerce')
+                c_price = pd.to_numeric(aligned_prices[compare_ticker], errors='coerce')
+
                 # CALCULATE CUMULATIVE RETURN
-                # Note: no need to dropna, iloc[0] is strictly the first visible day
-                norm_ticker = (aligned_prices[ticker] / aligned_prices[ticker].iloc[0] - 1) * 100
-                norm_compare = (aligned_prices[compare_ticker] / aligned_prices[compare_ticker].iloc[0] - 1) * 100
+                norm_ticker = ((t_price / t_price.iloc[0]) - 1) * 100
+                norm_compare = ((c_price / c_price.iloc[0]) - 1) * 100
+
+                # Extract pure float lists
+                y_norm_ticker = norm_ticker.tolist()
+                y_norm_compare = norm_compare.tolist()
+                y_upper = pd.to_numeric(corr_df['upper_threshold'], errors='coerce').tolist()
+                y_lower = pd.to_numeric(corr_df['lower_threshold'], errors='coerce').tolist()
+                y_rolling = pd.to_numeric(corr_df['rolling_corr'], errors='coerce').tolist()
+                y_avg = pd.to_numeric(corr_df['avg_corr'], errors='coerce').tolist()
 
                 fig_corr = make_subplots(
                     rows=2, cols=1, 
@@ -453,68 +461,40 @@ if compare_ticker:
                     subplot_titles=(f"Cumulative Return (%)", f"Rolling Correlation (2.0σ Bands)")
                 )
 
-                # ROW 1: Normalized Prices (Single Axis)
-                fig_corr.add_trace(go.Scatter(x=aligned_prices.index, y=norm_ticker, name=ticker, line=dict(color='#26a69a', width=2)), row=1, col=1)
-                fig_corr.add_trace(go.Scatter(x=aligned_prices.index, y=norm_compare, name=compare_ticker, line=dict(color='#ef5350', width=2)), row=1, col=1)
-
+                # ROW 1: Normalized Prices
+                fig_corr.add_trace(go.Scatter(x=aligned_prices.index, y=y_norm_ticker, name=ticker, line=dict(color='#26a69a', width=2)), row=1, col=1)
+                fig_corr.add_trace(go.Scatter(x=aligned_prices.index, y=y_norm_compare, name=compare_ticker, line=dict(color='#ef5350', width=2)), row=1, col=1)
 
                 # ROW 2: Correlation and Bands
-                fig_corr.add_trace(go.Scatter(
-                    x=corr_df.index, y=corr_df['upper_threshold'], 
-                    mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'
-                ), row=2, col=1)
-                
-                fig_corr.add_trace(go.Scatter(
-                    x=corr_df.index, y=corr_df['lower_threshold'], 
-                    mode='lines', fill='tonexty', fillcolor='rgba(128, 128, 128, 0.2)', 
-                    line=dict(width=0), name='Expected Range'
-                ), row=2, col=1)
-
-                fig_corr.add_trace(go.Scatter(
-                    x=corr_df.index, y=corr_df['rolling_corr'], 
-                    name='Rolling Corr', line=dict(color='white', width=1.5)
-                ), row=2, col=1)
-                
-                fig_corr.add_trace(go.Scatter(
-                    x=corr_df.index, y=corr_df['avg_corr'], 
-                    name='Avg Corr', line=dict(color='gray', width=1, dash='dot')
-                ), row=2, col=1)
+                fig_corr.add_trace(go.Scatter(x=corr_df.index, y=y_upper, mode='lines', line=dict(width=0), showlegend=False, hoverinfo='skip'), row=2, col=1)
+                fig_corr.add_trace(go.Scatter(x=corr_df.index, y=y_lower, mode='lines', fill='tonexty', fillcolor='rgba(128, 128, 128, 0.2)', line=dict(width=0), name='Expected Range'), row=2, col=1)
+                fig_corr.add_trace(go.Scatter(x=corr_df.index, y=y_rolling, name='Rolling Corr', line=dict(color='white', width=1.5)), row=2, col=1)
+                fig_corr.add_trace(go.Scatter(x=corr_df.index, y=y_avg, name='Avg Corr', line=dict(color='gray', width=1, dash='dot')), row=2, col=1)
 
                 # Signals
                 buy_signals = corr_df[corr_df['signal'] == 1]
                 sell_signals = corr_df[corr_df['signal'] == -1]
 
                 if not buy_signals.empty:
-                    fig_corr.add_trace(go.Scatter(
-                        x=buy_signals.index, y=buy_signals['rolling_corr'],
-                        mode='markers', marker=dict(symbol='triangle-up', size=12, color='#26a69a'),
-                        name='Revert Up Signal'
-                    ), row=2, col=1)
+                    y_buy = pd.to_numeric(buy_signals['rolling_corr'], errors='coerce').tolist()
+                    fig_corr.add_trace(go.Scatter(x=buy_signals.index, y=y_buy, mode='markers', marker=dict(symbol='triangle-up', size=12, color='#26a69a'), name='Revert Up Signal'), row=2, col=1)
 
                 if not sell_signals.empty:
-                    fig_corr.add_trace(go.Scatter(
-                        x=sell_signals.index, y=sell_signals['rolling_corr'],
-                        mode='markers', marker=dict(symbol='triangle-down', size=12, color='#ef5350'),
-                        name='Revert Down Signal'
-                    ), row=2, col=1)
+                    y_sell = pd.to_numeric(sell_signals['rolling_corr'], errors='coerce').tolist()
+                    fig_corr.add_trace(go.Scatter(x=sell_signals.index, y=y_sell, mode='markers', marker=dict(symbol='triangle-down', size=12, color='#ef5350'), name='Revert Down Signal'), row=2, col=1)
 
                 # Format layout
                 fig_corr.update_layout(
-                    height=700,
-                    template="plotly_dark",
-                    margin=dict(l=0, r=0, t=40, b=0),
-                    hovermode='x unified',
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                    height=700, template="plotly_dark", margin=dict(l=0, r=0, t=40, b=0),
+                    hovermode='x unified', legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
                 )
 
-                # Label 
-                fig_corr.update_yaxes(title_text=f"{ticker} Price ($)", secondary_y=False, row=1, col=1)
-                fig_corr.update_yaxes(title_text=f"{compare_ticker} Price ($)", secondary_y=True, row=1, col=1)
-
-                # Apply same weekend/overnight hiding logic
+                fig_corr.update_yaxes(title_text=f"{ticker} Return (%)", secondary_y=False, row=1, col=1)
                 fig_corr.update_xaxes(rangebreaks=[dict(bounds=["sat", "mon"])])
                 
-                st.plotly_chart(fig_corr, use_container_width=True)
+                # Render with dynamic key to prevent ghost traces
+                corr_key = f"corr_{ticker}_{compare_ticker}_{timeframe}"
+                st.plotly_chart(fig_corr, use_container_width=True, key=corr_key)
 
 # ==========================================
 # MULTI-ASSET CORRELATION HEATMAP
@@ -522,10 +502,7 @@ if compare_ticker:
 st.markdown("---")
 st.subheader("Sector & Industry Correlation Heatmap")
 
-# final list of tickers (Primary Ticker + Sidebar Tickers)
 basket_tickers = [ticker] + [t for t in hm_tickers if t != ticker]
-
-# Remove duplicates
 basket_tickers = list(dict.fromkeys(basket_tickers))
         
 if len(basket_tickers) > 1:
@@ -534,7 +511,6 @@ if len(basket_tickers) > 1:
         fetch_1_yr = (timeframe == "6 Months") 
         fetch_5_yr = (timeframe in ["1 Year", "5 Years"]) 
                 
-        # slice data for final plot
         today = pd.Timestamp.now().normalize()
         if timeframe == "6 Months":
             target_start = today - pd.DateOffset(months=6)
@@ -547,9 +523,7 @@ if len(basket_tickers) > 1:
         failed_tickers = []
                 
         for t in basket_tickers:
-            t_df = get_eod_ticker_data(
-                        t, one_month=False, half_yr=False, one_yr=fetch_1_yr, five_yrs=fetch_5_yr
-                    )
+            t_df = get_eod_ticker_data(t, one_month=False, half_yr=False, one_yr=fetch_1_yr, five_yrs=fetch_5_yr)
             if t_df is not None and not t_df.empty and 'date' in t_df.columns:
                 t_df['date'] = pd.to_datetime(t_df['date'])
                 t_df.set_index('date', inplace=True)
@@ -572,30 +546,28 @@ if len(basket_tickers) > 1:
         # Stitch and Calculate
         if len(close_prices) > 1:
             basket_df = pd.concat(close_prices, axis=1, join='inner')
+            
+            # Force entire dataframe to numeric before correlation math
+            basket_df = basket_df.apply(pd.to_numeric, errors='coerce')
+            
             corr_matrix = get_correlation_engine(basket_df)
-
             z_values = np.round(corr_matrix.values, 2)
                     
             fig_heat = go.Figure(data=go.Heatmap(
-                        z=z_values,
-                        x=corr_matrix.columns,
-                        y=corr_matrix.index,
-                        colorscale='RdBu', 
-                        zmin=-1, zmax=1,   
-                        text=z_values,
-                        texttemplate="%{text}",
-                        textfont={"size": 14, "color": "white"},
-                        hoverinfo="x+y+z"
-                    ))
+                z=z_values, x=corr_matrix.columns, y=corr_matrix.index,
+                colorscale='RdBu', zmin=-1, zmax=1,   
+                text=z_values, texttemplate="%{text}",
+                textfont={"size": 14, "color": "white"}, hoverinfo="x+y+z"
+            ))
 
             fig_heat.update_layout(
-                        template="plotly_dark",
-                        height=500 + (len(basket_tickers) * 20), 
-                        margin=dict(l=0, r=0, t=30, b=0),
-                        yaxis_autorange='reversed' 
-                    )
+                template="plotly_dark", height=500 + (len(basket_tickers) * 20), 
+                margin=dict(l=0, r=0, t=30, b=0), yaxis_autorange='reversed' 
+            )
 
-            st.plotly_chart(fig_heat, use_container_width=True)
+            # Render with dynamic key
+            heat_key = f"heat_{'_'.join(basket_tickers)}_{timeframe}"
+            st.plotly_chart(fig_heat, use_container_width=True, key=heat_key)
         else:
             st.info("Not enough valid tickers to generate a heatmap.")
 else:
