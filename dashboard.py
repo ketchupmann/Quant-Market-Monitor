@@ -144,7 +144,7 @@ with top_left:
         st.title(f"{ticker} Market Data")
 
 with top_right:
-    if snapshot:
+    if snapshot and any([snapshot.get('close'), snapshot.get('volume'), snapshot.get('high')]):
         st.write("") # Tiny spacer to push metrics down to align with title
         st.caption("**Live Market Snapshot (15m Delayed)**")
         col1, col2, col3, col4, col5 = st.columns(5)
@@ -154,7 +154,7 @@ with top_right:
         col4.metric("Day Low", f"${snapshot['low']:.2f}")
         col5.metric("VWAP", f"${snapshot['vwap']:.2f}")
     else:
-        st.warning("Live snapshot data is currently unavailable.")
+        st.warning("Live snapshot data is currently unavailable. (Market Closed or Pre-Market).")
 
 st.markdown("---")
 
@@ -352,7 +352,7 @@ else:
     # ==========================================
     chart_key = f"main_chart_{ticker}_{timeframe}_{show_rsi}_{show_ema}"
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
-    
+
 # ==========================================
 # COMPACT RISK METRICS CONTAINER
 # ==========================================
