@@ -335,10 +335,12 @@ else:
     
     fig.update_layout(**layout_update)
     
-    # Apply rangebreaks to all x-axes
+    # Apply rangebreaks and strict zoom boundaries to all x-axes
     fig.update_xaxes(
         rangebreaks=breaks,
-        rangeslider_visible=False
+        rangeslider_visible=False,
+        minallowed=chart_df.index.min(), # Locks zooming out past the oldest data point
+        maxallowed=chart_df.index.max()  # Locks zooming out past the newest data point
     )
 
     # ==========================================
