@@ -278,6 +278,3 @@ def get_financial_statements(ticker, limit=5):
         "balance": clean_df(balance_data),
         "cash": clean_df(cash_data)
     }
-
-
-   
