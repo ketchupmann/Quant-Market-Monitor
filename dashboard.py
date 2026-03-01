@@ -154,10 +154,16 @@ with top_right:
         col4.metric("Day Low", f"${snapshot['low']:.2f}")
         col5.metric("VWAP", f"${snapshot['vwap']:.2f}")
     else:
-        snap_df = get_minute_ticker_data(ticker)
+        snap_df = get_eod_ticker_data(ticker)
         snapshot_replacement = snap_df.iloc[0]
         st.write("")
-        st.caption("**Last Market Snapshot (Market Closed or Pre-market)**")
+        st.caption("**Last Market Snapshot (Market Closed or Pre-Market)**")
+        col1, col2, col3, col4, col5 = st.columns(5)
+        col1.metric("Last Price", f"${snapshot_replacement['close']:.2f}", f"{snapshot_replacement['last_days_change']:.2f} ({snapshot_replacement['last_days_change_percent']:.2f}%)")
+        col2.metric("Today's Vol", format_large_number(snapshot_replacement['volume']))
+        col3.metric("Day High", f"${snapshot_replacement['high']:.2f}")
+        col4.metric("Day Low", f"${snapshot_replacement['low']:.2f}")
+        col5.metric("VWAP", f"${snapshot_replacement['vwap']:.2f}")
 
 
 st.markdown("---")
