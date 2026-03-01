@@ -335,14 +335,20 @@ else:
     
     fig.update_layout(**layout_update)
     
-    # Apply rangebreaks and strict zoom boundaries to all x-axes
+   
+    # Calculate safe boundaries with a 1-day buffer to prevent rangebreak collision
+    min_date = (chart_df.index.min() - pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+    max_date = (chart_df.index.max() + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+
+    # Apply rangebreaks and strict zoom boundaries
     fig.update_xaxes(
+        type="date", # Strictly force date handling
         rangebreaks=breaks,
         rangeslider_visible=False,
-        minallowed=chart_df.index.min().strftime('%Y-%m-%d %H:%M:%S'),
-        maxallowed=chart_df.index.max().strftime('%Y-%m-%d %H:%M:%S')
+        minallowed=min_date,
+        maxallowed=max_date
     )
-
+    
     # ==========================================
     # STREAMLIT RENDER (WITH DYNAMIC KEY FIX)
     # ==========================================
