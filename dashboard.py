@@ -284,10 +284,16 @@ else:
         chart_df.index = chart_df.index + pd.Timedelta(hours=12)
 
     # ==========================================
-    # PLOTLY X-AXIS
+    # PLOTLY X-AXIS (CATEGORICAL FIX)
     # ==========================================
     
-    # 1. Force Y-Axis data into pure floats using the clean chart_df
+    # 1. Convert index to pure strings. This acts as a natural rangebreak 
+    # and physically prevents the infinite zoom-out browser crash.
+    if is_intraday:
+        x_labels = chart_df.index.strftime('%b %d, %H:%M').tolist()
+    else:
+        x_labels = chart_df.index.strftime('%Y-%m-%d').tolist()
+
     open_p = pd.to_numeric(chart_df['open'], errors='coerce').tolist()
     high_p = pd.to_numeric(chart_df['high'], errors='coerce').tolist()
     low_p = pd.to_numeric(chart_df['low'], errors='coerce').tolist()
@@ -296,7 +302,7 @@ else:
 
     # ROW 1: Candlesticks
     fig.add_trace(go.Candlestick(
-        x=chart_df.index, open=open_p, high=high_p, low=low_p, close=close_p,
+        x=x_labels, open=open_p, high=high_p, low=low_p, close=close_p,
         name='Price', increasing_line_color='#26a69a', decreasing_line_color='#ef5350',
         hovertemplate=candle_hover
     ), row=1, col=1)
@@ -305,35 +311,28 @@ else:
     if show_ema:
         ema9 = pd.to_numeric(chart_df['EMA_9'], errors='coerce').tolist()
         ema21 = pd.to_numeric(chart_df['EMA_21'], errors='coerce').tolist()
-        fig.add_trace(go.Scatter(x=chart_df.index, y=ema9, name='EMA 9', line=dict(color='#29b6f6', width=1.5), hoverinfo='skip'), row=1, col=1)
-        fig.add_trace(go.Scatter(x=chart_df.index, y=ema21, name='EMA 21', line=dict(color='#ab47bc', width=1.5), hoverinfo='skip'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=x_labels, y=ema9, name='EMA 9', line=dict(color='#29b6f6', width=1.5), hoverinfo='skip'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=x_labels, y=ema21, name='EMA 21', line=dict(color='#ab47bc', width=1.5), hoverinfo='skip'), row=1, col=1)
 
     if show_vwap and 'vwap' in chart_df.columns:
         vwap_v = pd.to_numeric(chart_df['vwap'], errors='coerce').tolist()
-        fig.add_trace(go.Scatter(x=chart_df.index, y=vwap_v, name='VWAP', line=dict(color='#ffa726', width=2, dash='dot'), hoverinfo='skip'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=x_labels, y=vwap_v, name='VWAP', line=dict(color='#ffa726', width=2, dash='dot'), hoverinfo='skip'), row=1, col=1)
 
     # ROW 2: Volume
     colors = ['#26a69a' if c >= o else '#ef5350' for c, o in zip(close_p, open_p)]
     fig.add_trace(go.Bar(
-        x=chart_df.index, y=volumes, name='Volume', marker_color=colors, opacity=0.8, hovertemplate=volume_hover
+        x=x_labels, y=volumes, name='Volume', marker_color=colors, opacity=0.8, hovertemplate=volume_hover
     ), row=2, col=1)
 
     # ROW 3: RSI
     if show_rsi and 'rsi' in chart_df.columns:
         rsi_vals = pd.to_numeric(chart_df['rsi'], errors='coerce').tolist()
-        fig.add_trace(go.Scatter(x=chart_df.index, y=rsi_vals, name='RSI', line=dict(color='#ab47bc', width=1.5)), row=3, col=1)
-        fig.add_trace(go.Scatter(x=chart_df.index, y=[70]*len(chart_df.index), line=dict(color='#ef5350', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
-        fig.add_trace(go.Scatter(x=chart_df.index, y=[30]*len(chart_df.index), line=dict(color='#26a69a', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
+        fig.add_trace(go.Scatter(x=x_labels, y=rsi_vals, name='RSI', line=dict(color='#ab47bc', width=1.5)), row=3, col=1)
+        fig.add_trace(go.Scatter(x=x_labels, y=[70]*len(x_labels), line=dict(color='#ef5350', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
+        fig.add_trace(go.Scatter(x=x_labels, y=[30]*len(x_labels), line=dict(color='#26a69a', width=1, dash='dash'), hoverinfo='skip', showlegend=False), row=3, col=1)
         fig.update_yaxes(title_text="RSI", range=[0, 100], tickvals=[0, 30, 50, 70, 100], row=3, col=1)
 
-    # --- Formatting Layout & Rangebreaks ---
-    
-    # Define rangebreaks
-    breaks = [dict(bounds=["sat", "mon"])] # Always skip weekends
-    if is_intraday:
-        # Soften the overnight gaps to 16.05 (4:03 PM) and 9.45 (9:27 AM)
-        breaks.append(dict(bounds=[16.05, 9.45], pattern="hour"))
-
+    # --- Formatting Layout ---
     layout_update = dict(
         height=750 if show_rsi else 600, 
         template="plotly_dark", margin=dict(l=0, r=0, t=10, b=0), showlegend=False
@@ -341,20 +340,11 @@ else:
     
     fig.update_layout(**layout_update)
     
-    # 💥 THE REAL FIX: Calculate safe, padded boundaries so the limits never touch the gaps
-    if is_intraday:
-        safe_min = (chart_df.index.min() - pd.Timedelta(days=1)).strftime('%Y-%m-%d 00:00:00')
-        safe_max = (chart_df.index.max() + pd.Timedelta(days=1)).strftime('%Y-%m-%d 23:59:59')
-    else:
-        safe_min = (chart_df.index.min() - pd.Timedelta(days=5)).strftime('%Y-%m-%d 00:00:00')
-        safe_max = (chart_df.index.max() + pd.Timedelta(days=5)).strftime('%Y-%m-%d 23:59:59')
-    
-    # Apply rangebreaks and lock the zoom cleanly using the padded strings
+    # 💥 Rip out rangebreaks and minallowed entirely. Force category type.
     fig.update_xaxes(
-        rangebreaks=breaks,
+        type='category',
         rangeslider_visible=False,
-        minallowed=safe_min,
-        maxallowed=safe_max
+        nticks=10
     )
 
     # ==========================================
