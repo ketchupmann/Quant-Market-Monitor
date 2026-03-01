@@ -154,7 +154,11 @@ with top_right:
         col4.metric("Day Low", f"${snapshot['low']:.2f}")
         col5.metric("VWAP", f"${snapshot['vwap']:.2f}")
     else:
-        st.warning("Live snapshot data is currently unavailable. (Market Closed or Pre-Market).")
+        snap_df = get_minute_ticker_data(ticker)
+        snapshot_replacement = snap_df.iloc[0]
+        st.write("")
+        st.caption("**Last Market Snapshot (Market Closed or Pre-market)**")
+
 
 st.markdown("---")
 
@@ -280,7 +284,7 @@ else:
         # Strip out extended hours strictly for Plotly
         chart_df = chart_df.between_time('09:30', '15:59')
     else:
-        # 💥 THE FIX 1: Shift daily data to 12:00 PM to avoid midnight weekend boundary collisions
+        # THE FIX 1: Shift daily data to 12:00 PM to avoid midnight weekend boundary collisions
         chart_df.index = chart_df.index + pd.Timedelta(hours=12)
 
     # ==========================================
@@ -340,7 +344,7 @@ else:
     
     fig.update_layout(**layout_update)
     
-    # 💥 Rip out rangebreaks and minallowed entirely. Force category type.
+    # Rip out rangebreaks and minallowed entirely. Force category type.
     fig.update_xaxes(
         type='category',
         rangeslider_visible=False,
