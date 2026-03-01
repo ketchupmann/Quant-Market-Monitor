@@ -331,7 +331,7 @@ else:
     # Define rangebreaks
     breaks = [dict(bounds=["sat", "mon"])] # Always skip weekends
     if is_intraday:
-        # 💥 THE FIX 2: Soften the overnight gaps to 16.05 (4:03 PM) and 9.45 (9:27 AM)
+        # Soften the overnight gaps to 16.05 (4:03 PM) and 9.45 (9:27 AM)
         breaks.append(dict(bounds=[16.05, 9.45], pattern="hour"))
 
     layout_update = dict(
@@ -341,12 +341,20 @@ else:
     
     fig.update_layout(**layout_update)
     
-    # Apply rangebreaks and lock the zoom cleanly
+    # 💥 THE REAL FIX: Calculate safe, padded boundaries so the limits never touch the gaps
+    if is_intraday:
+        safe_min = (chart_df.index.min() - pd.Timedelta(days=1)).strftime('%Y-%m-%d 00:00:00')
+        safe_max = (chart_df.index.max() + pd.Timedelta(days=1)).strftime('%Y-%m-%d 23:59:59')
+    else:
+        safe_min = (chart_df.index.min() - pd.Timedelta(days=5)).strftime('%Y-%m-%d 00:00:00')
+        safe_max = (chart_df.index.max() + pd.Timedelta(days=5)).strftime('%Y-%m-%d 23:59:59')
+    
+    # Apply rangebreaks and lock the zoom cleanly using the padded strings
     fig.update_xaxes(
         rangebreaks=breaks,
         rangeslider_visible=False,
-        minallowed=chart_df.index.min().strftime('%Y-%m-%d %H:%M:%S'),
-        maxallowed=chart_df.index.max().strftime('%Y-%m-%d %H:%M:%S')
+        minallowed=safe_min,
+        maxallowed=safe_max
     )
 
     # ==========================================
