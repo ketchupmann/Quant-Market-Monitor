@@ -271,12 +271,17 @@ else:
         candle_hover = "<b>%{x|%b %d, %Y}</b><br><br>Open: $%{open:.2f}<br>High: $%{high:.2f}<br>Low: $%{low:.2f}<br>Close: $%{close:.2f}<extra></extra>"
         volume_hover = "<b>%{x|%b %d, %Y}</b><br>Volume: %{y:,.0f}<extra></extra>"
 
+    # ==========================================
+    # CREATE ISOLATED CHARTING DATAFRAME
+    # ==========================================
     chart_df = df.copy()
 
     if is_intraday:
-        # Strip out extended hours strictly for Plotly to prevent rendering glitches.
-        # This leaves your original 'df' intact for your raw data tables.
+        # Strip out extended hours strictly for Plotly
         chart_df = chart_df.between_time('09:30', '15:59')
+    else:
+        # 💥 THE FIX 1: Shift daily data to 12:00 PM to avoid midnight weekend boundary collisions
+        chart_df.index = chart_df.index + pd.Timedelta(hours=12)
 
     # ==========================================
     # PLOTLY X-AXIS
@@ -323,10 +328,11 @@ else:
 
     # --- Formatting Layout & Rangebreaks ---
     
-    # Define rangebreaks (Plotly still needs this to pull the visual days/hours together)
+    # Define rangebreaks
     breaks = [dict(bounds=["sat", "mon"])] # Always skip weekends
     if is_intraday:
-        breaks.append(dict(bounds=[16, 9.5], pattern="hour")) # Hide the visual gap overnight
+        # 💥 THE FIX 2: Soften the overnight gaps to 16.05 (4:03 PM) and 9.45 (9:27 AM)
+        breaks.append(dict(bounds=[16.05, 9.45], pattern="hour"))
 
     layout_update = dict(
         height=750 if show_rsi else 600, 
@@ -335,20 +341,14 @@ else:
     
     fig.update_layout(**layout_update)
     
-   
-    # Calculate safe boundaries with a 1-day buffer to prevent rangebreak collision
-    min_date = (chart_df.index.min() - pd.Timedelta(days=1)).strftime('%Y-%m-%d')
-    max_date = (chart_df.index.max() + pd.Timedelta(days=1)).strftime('%Y-%m-%d')
-
-    # Apply rangebreaks and strict zoom boundaries
+    # Apply rangebreaks and lock the zoom cleanly
     fig.update_xaxes(
-        type="date", # Strictly force date handling
         rangebreaks=breaks,
         rangeslider_visible=False,
-        minallowed=min_date,
-        maxallowed=max_date
+        minallowed=chart_df.index.min().strftime('%Y-%m-%d %H:%M:%S'),
+        maxallowed=chart_df.index.max().strftime('%Y-%m-%d %H:%M:%S')
     )
-    
+
     # ==========================================
     # STREAMLIT RENDER (WITH DYNAMIC KEY FIX)
     # ==========================================
