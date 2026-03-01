@@ -339,8 +339,8 @@ else:
     fig.update_xaxes(
         rangebreaks=breaks,
         rangeslider_visible=False,
-        minallowed=chart_df.index.min(), # Locks zooming out past the oldest data point
-        maxallowed=chart_df.index.max()  # Locks zooming out past the newest data point
+        minallowed=chart_df.index.min().strftime('%Y-%m-%d %H:%M:%S'),
+        maxallowed=chart_df.index.max().strftime('%Y-%m-%d %H:%M:%S')
     )
 
     # ==========================================
