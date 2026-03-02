@@ -154,7 +154,8 @@ with top_right:
         col4.metric("Day Low", f"${snapshot['low']:.2f}")
         col5.metric("VWAP", f"${snapshot['vwap']:.2f}")
     else:
-        reversed_snap_df = get_eod_ticker_data(ticker, one_month=True, five_yrs=False)
+        st.write("we have a problem")
+        '''reversed_snap_df = get_eod_ticker_data(ticker, one_month=True, five_yrs=False)
         snap_df = reversed_snap_df.iloc[::-1]
         snapshot_replacement = snap_df.iloc[0]
         change_in_price = snap_df['close'].iloc[0] - snap_df['close'].iloc[1]
@@ -166,7 +167,7 @@ with top_right:
         col2.metric("Last day's Vol", format_large_number(snapshot_replacement['volume']))
         col3.metric("Day High", f"${snapshot_replacement['high']:.2f}")
         col4.metric("Day Low", f"${snapshot_replacement['low']:.2f}")
-        col5.metric("VWAP", f"${snapshot_replacement['vwap']:.2f}")
+        col5.metric("VWAP", f"${snapshot_replacement['vwap']:.2f}")'''
 
 
 st.markdown("---")
