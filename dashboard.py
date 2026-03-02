@@ -342,9 +342,9 @@ else:
 
     # BOLLINGER BANDS OVERLAY
     if show_bbands and 'Upper_Band' in chart_df.columns:
-        ub = pd.to_numeric(chart_df['Upper_Band'], errors='coerce').tolist()
-        lb = pd.to_numeric(chart_df['Lower_Band'], errors='coerce').tolist()
-        sma = pd.to_numeric(chart_df['SMA_20'], errors='coerce').tolist()
+        ub = pd.to_numeric(chart_df['upper_band'], errors='coerce').tolist()
+        lb = pd.to_numeric(chart_df['lower_band'], errors='coerce').tolist()
+        sma = pd.to_numeric(chart_df['SMA'], errors='coerce').tolist()
 
         # Upper Band 
         fig.add_trace(go.Scatter(
