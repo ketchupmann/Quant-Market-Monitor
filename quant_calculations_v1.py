@@ -339,4 +339,13 @@ def calculate_ema(prices: pd.Series, span: int) -> pd.Series:
     """
     return prices.ewm(span=span, adjust=False).mean()
 
+def get_bollinger_bands(df: pd.DataFrame, window: int=20, std_factor: float=2.0):
+    df = df.copy()
+    df['SMA'] = df['close'].rolling(window=window).mean()
+    df['std'] = df['close'].rolling(window=window).std()
+    df['upper_band'] = df['SMA'] + (std_factor * df['std'])
+    df['lower_band'] = df['SMA'] - (std_factor * df['std'])
+
+    return df
+
 

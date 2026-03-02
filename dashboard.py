@@ -233,12 +233,14 @@ else:
     valid_rsi_timeframes = ["6 Months", "1 Year", "5 Years"]
     show_rsi = False
     
-    col_t1, col_t2, col_t3 = st.columns([1, 1, 1.5])
+    col_t1, col_t2, col_t3, col_t4 = st.columns([1, 1, 1, 1.5])
     with col_t1:
         show_ema = st.toggle("Show EMA (9 & 21)")
     with col_t2:
         show_vwap = st.toggle("Show VWAP")
     with col_t3:
+        show_bbands = st.toggle("Show Bollinger Bands")
+    with col_t4:
         if not is_intraday and timeframe in valid_rsi_timeframes:
             show_rsi = st.toggle("Show RSI (14-Day Window)")
         elif not is_intraday:
@@ -273,6 +275,8 @@ else:
             vertical_spacing=0.04, 
             row_heights=[0.6, 0.2, 0.2]
         )
+    if show_bbands:
+        df = calculate_bollinger_bands(df)
     else:
         fig = make_subplots(
             rows=2, cols=1, 

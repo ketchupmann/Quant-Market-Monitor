@@ -10,3 +10,4 @@ test_massive_api.py
 test_quant_calculations.py
 test_supabase_api.py
 test_upload_csv.py
+test_bollinger_bands.py
