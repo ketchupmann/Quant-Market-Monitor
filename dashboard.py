@@ -340,6 +340,31 @@ else:
         vwap_v = pd.to_numeric(chart_df['vwap'], errors='coerce').tolist()
         fig.add_trace(go.Scatter(x=x_labels, y=vwap_v, name='VWAP', line=dict(color='#ffa726', width=2, dash='dot'), hoverinfo='skip'), row=1, col=1)
 
+    # BOLLINGER BANDS OVERLAY
+    if show_bbands and 'Upper_Band' in chart_df.columns:
+        ub = pd.to_numeric(chart_df['Upper_Band'], errors='coerce').tolist()
+        lb = pd.to_numeric(chart_df['Lower_Band'], errors='coerce').tolist()
+        sma = pd.to_numeric(chart_df['SMA_20'], errors='coerce').tolist()
+
+        # Upper Band 
+        fig.add_trace(go.Scatter(
+            x=x_labels, y=ub, name='Upper Band', 
+            line=dict(color='rgba(173, 216, 230, 0.4)', width=1), hoverinfo='skip'
+        ), row=1, col=1)
+
+        # Lower Band
+        fig.add_trace(go.Scatter(
+            x=x_labels, y=lb, name='Lower Band', 
+            fill='tonexty', fillcolor='rgba(173, 216, 230, 0.1)', # Light blue shading
+            line=dict(color='rgba(173, 216, 230, 0.4)', width=1), hoverinfo='skip'
+        ), row=1, col=1)
+
+        # 20-day SMA in the middle
+        fig.add_trace(go.Scatter(
+            x=x_labels, y=sma, name='SMA 20', 
+            line=dict(color='rgba(173, 216, 230, 0.8)', width=1, dash='dot'), hoverinfo='skip'
+        ), row=1, col=1)
+
     # ROW 2: Volume
     colors = ['#26a69a' if c >= o else '#ef5350' for c, o in zip(close_p, open_p)]
     fig.add_trace(go.Bar(
