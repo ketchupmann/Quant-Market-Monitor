@@ -154,7 +154,8 @@ with top_right:
         col4.metric("Day Low", f"${snapshot['low']:.2f}")
         col5.metric("VWAP", f"${snapshot['vwap']:.2f}")
     else:
-        snap_df = get_eod_ticker_data(ticker, one_month=True, five_yrs=False)
+        reversed_snap_df = get_eod_ticker_data(ticker, one_month=True, five_yrs=False)
+        snap_df = reversed_snap_df.iloc[::-1]
         snapshot_replacement = snap_df.iloc[0]
         change_in_price = snap_df['close'].iloc[0] - snap_df['close'].iloc[1]
         change_price_percent = change_in_price / snap_df['close'].iloc[1]
