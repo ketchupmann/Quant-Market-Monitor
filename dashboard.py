@@ -11,7 +11,7 @@ supabase_url = st.secrets["SUPABASE_URL"]
 supabase_key = st.secrets["SUPABASE_KEY"]
 
 # --- BACKEND FUNCTIONS ---
-from backend_monitor import get_ticker_details, get_snapshot_ticker, format_large_number
+from backend_monitor import get_ticker_details, get_snapshot_ticker, format_large_number, filter_weekends_holidays
 from pull_supabase_data_v1 import get_eod_ticker_data, get_minute_ticker_data
 from quant_calculations_v1 import combine_closed_stitcher, get_period_volatility, get_max_drawdown, calculate_sharpe_ratio, calculate_beta_alpha, calculate_correlation_signal, get_correlation_engine, get_rsi, calculate_ema, get_bollinger_bands
 
@@ -196,7 +196,7 @@ with st.spinner(f"Pulling {timeframe} data for {ticker}... (Auto-ingesting if ne
             five_yrs=(timeframe == "5 Years")
         )
         is_intraday = False
-
+    df = filter_weekends_holidays(df)
 # ==========================================
 # HISTORICAL CHARTING (NOW AT THE TOP)
 # ==========================================
@@ -403,7 +403,7 @@ else:
     # ==========================================
     chart_key = f"main_chart_{ticker}_{timeframe}_{show_rsi}_{show_ema}"
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
-    
+
 # ==========================================
 # COMPACT RISK METRICS CONTAINER
 # ==========================================
