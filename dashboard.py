@@ -84,7 +84,12 @@ def fetch_snapshot(ticker):
 
 # --- SIDEBAR CONTROLS ---
 st.sidebar.header("🔍 Monitor Settings")
-ticker = st.sidebar.text_input("Stock Symbol", value="AAPL").upper()
+ticker = st.sidebar.text_input("Stock Symbol", value="AAPL").strip().upper()
+
+if not ticker:
+    st.markdown("---")
+    st.info("👋 **Welcome to the goat's Quantitative Market Monitor!** \n\nPlease enter a valid stock ticker symbol")
+    st.stop() # Silently stops the rest of the page from rendering
 
 timeframe = st.sidebar.selectbox(
     "Timeframe", 
