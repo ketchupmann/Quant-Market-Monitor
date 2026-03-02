@@ -156,10 +156,12 @@ with top_right:
     else:
         snap_df = get_eod_ticker_data(ticker, one_month=True, five_yrs=False)
         snapshot_replacement = snap_df.iloc[0]
+        change_in_price = snap_df[['close']].iloc[0] - snap_df[['close']].iloc[1]
+        change_price_percent = change_in_price / snap_df[['close']].iloc[1]
         st.write("")
         st.caption("**Last Market Snapshot (Market Closed or Pre-Market)**")
         col1, col2, col3, col4, col5 = st.columns(5)
-        col1.metric("Last Price", f"${snapshot_replacement['close']:.2f}")
+        col1.metric("Last Price", f"${snapshot_replacement['close']:.2f}", f"{change_in_price:.2f} ({change_price_percent:.2f}%)")
         col2.metric("Last day's Vol", format_large_number(snapshot_replacement['volume']))
         col3.metric("Day High", f"${snapshot_replacement['high']:.2f}")
         col4.metric("Day Low", f"${snapshot_replacement['low']:.2f}")
