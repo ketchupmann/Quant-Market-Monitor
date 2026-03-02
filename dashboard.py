@@ -13,7 +13,7 @@ supabase_key = st.secrets["SUPABASE_KEY"]
 # --- BACKEND FUNCTIONS ---
 from backend_monitor import get_ticker_details, get_snapshot_ticker, format_large_number
 from pull_supabase_data_v1 import get_eod_ticker_data, get_minute_ticker_data
-from quant_calculations_v1 import combine_closed_stitcher, get_period_volatility, get_max_drawdown, calculate_sharpe_ratio, calculate_beta_alpha, calculate_correlation_signal, get_correlation_engine, get_rsi, calculate_ema
+from quant_calculations_v1 import combine_closed_stitcher, get_period_volatility, get_max_drawdown, calculate_sharpe_ratio, calculate_beta_alpha, calculate_correlation_signal, get_correlation_engine, get_rsi, calculate_ema, get_bollinger_bands
 
 
 # --- CUSTOM CSS FOR COMPACT LAYOUT ---
@@ -276,7 +276,7 @@ else:
             row_heights=[0.6, 0.2, 0.2]
         )
     if show_bbands:
-        df = calculate_bollinger_bands(df)
+        df = get_bollinger_bands(df)
     else:
         fig = make_subplots(
             rows=2, cols=1, 
