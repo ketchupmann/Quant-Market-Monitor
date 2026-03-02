@@ -229,7 +229,7 @@ else:
         # force Plotly to read 09:30 as pure local time.
         df.index = df.index.tz_convert('US/Eastern').tz_localize(None)
 
-    # --- RSI Toggle Logic ---
+    # --- Toggle Logic ---
     valid_rsi_timeframes = ["6 Months", "1 Year", "5 Years"]
     show_rsi = False
     
@@ -246,10 +246,16 @@ else:
         elif not is_intraday:
             st.caption("*(RSI requires 6M+ timeframe)*")
 
-    # Calculate EMAs if requested
+    # --- Data Calculations ---
+    
     if show_ema:
         df['EMA_9'] = calculate_ema(df['close'], span=9)
         df['EMA_21'] = calculate_ema(df['close'], span=21)
+
+    if show_bbands:
+        df = get_bollinger_bands(df)
+
+    # --- Chart Initialization ---
 
     if show_rsi:
         with st.spinner("Calculating RSI..."):
@@ -275,8 +281,6 @@ else:
             vertical_spacing=0.04, 
             row_heights=[0.6, 0.2, 0.2]
         )
-    if show_bbands:
-        df = get_bollinger_bands(df)
     else:
         fig = make_subplots(
             rows=2, cols=1, 
@@ -341,7 +345,7 @@ else:
         fig.add_trace(go.Scatter(x=x_labels, y=vwap_v, name='VWAP', line=dict(color='#ffa726', width=2, dash='dot'), hoverinfo='skip'), row=1, col=1)
 
     # BOLLINGER BANDS OVERLAY
-    if show_bbands and 'Upper_Band' in chart_df.columns:
+    if show_bbands and 'upper_band' in chart_df.columns:
         ub = pd.to_numeric(chart_df['upper_band'], errors='coerce').tolist()
         lb = pd.to_numeric(chart_df['lower_band'], errors='coerce').tolist()
         sma = pd.to_numeric(chart_df['SMA'], errors='coerce').tolist()
@@ -399,7 +403,7 @@ else:
     # ==========================================
     chart_key = f"main_chart_{ticker}_{timeframe}_{show_rsi}_{show_ema}"
     st.plotly_chart(fig, use_container_width=True, key=chart_key)
-
+    
 # ==========================================
 # COMPACT RISK METRICS CONTAINER
 # ==========================================
