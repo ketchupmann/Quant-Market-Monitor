@@ -21,6 +21,16 @@ def format_large_number(num):
         return f"{num / 1_000:.2f}K"
     return f"{num:,.0f}"
 
+def filter_weekends_holidays(df: pd.DataFrame):
+    """
+    Removes weekends and market holidays from the DataFrame.
+    Relies on Datetime properties.
+    """
+    df = df.copy()
+    df = df[df.index.dayofweek < 5]
+        
+    return df
+
 def get_ticker_details(ticker: str) -> dict:
     """
     Fetches fundamental company metadata and branding assets from Massive.
