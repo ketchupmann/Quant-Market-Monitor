@@ -196,7 +196,7 @@ with st.spinner(f"Pulling {timeframe} data for {ticker}... (Auto-ingesting if ne
             five_yrs=(timeframe == "5 Years")
         )
         is_intraday = False
-    df = filter_weekends_holidays(df)
+   
 # ==========================================
 # HISTORICAL CHARTING (NOW AT THE TOP)
 # ==========================================
@@ -212,6 +212,7 @@ else:
         if is_intraday:
             # Force lock as strict UTC
             df[time_col] = pd.to_datetime(df[time_col], utc=True)
+            df = filter_weekends_holidays(df)
         else:
             df[time_col] = pd.to_datetime(df[time_col])
             
