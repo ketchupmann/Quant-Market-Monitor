@@ -1,4 +1,4 @@
-# Quantitative Market Monitor & Statistical Arbitrage Engine 📈
+# Quantitative Market Monitor & Statistical Arbitrage Engine 
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-App-FF4B4B.svg)](https://streamlit.io/)
