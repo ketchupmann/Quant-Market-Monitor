@@ -254,8 +254,30 @@ else:
         df['EMA_21'] = calculate_ema(df['close'], span=21)
 
     if show_bbands:
-        df = get_bollinger_bands(df)
-
+        if not is_intraday:
+            with st.spinner("Calculating Bollinger Bands..."):
+                fetch_1_yr = (timeframe == "6 Months") 
+                fetch_5_yr = (timeframe in ["1 Year", "5 Years"]) 
+                
+                padded_df = get_eod_ticker_data(
+                    ticker, one_month=False, half_yr=False, one_yr=fetch_1_yr, five_yrs=fetch_5_yr
+                )
+                
+                if padded_df is not None and not padded_df.empty:
+                    if 'date' in padded_df.columns:
+                        padded_df['date'] = pd.to_datetime(padded_df['date'])
+                        padded_df.set_index('date', inplace=True)
+                    padded_df.sort_index(inplace=True)
+                    
+                    bb_df = get_bollinger_bands(padded_df.copy())
+                    
+                    bb_cols = bb_df[['SMA', 'upper_band', 'lower_band']]
+                    
+                    df = df.join(bb_cols, how='left')
+                else:
+                    df = get_bollinger_bands(df)
+        else:
+            df = get_bollinger_bands(df)
     # --- Chart Initialization ---
 
     if show_rsi:
