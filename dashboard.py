@@ -212,7 +212,6 @@ else:
         if is_intraday:
             # Force lock as strict UTC
             df[time_col] = pd.to_datetime(df[time_col], utc=True)
-            df = filter_weekends_holidays(df)
         else:
             df[time_col] = pd.to_datetime(df[time_col])
             
@@ -229,6 +228,7 @@ else:
         # Shift to US/Eastern 
         # force Plotly to read 09:30 as pure local time.
         df.index = df.index.tz_convert('US/Eastern').tz_localize(None)
+        df = filter_weekends_holidays(df)
 
     # --- Toggle Logic ---
     valid_rsi_timeframes = ["6 Months", "1 Year", "5 Years"]
