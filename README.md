@@ -9,7 +9,7 @@
 
 A high-performance quantitative market analysis platform engineered to visualize market microstructure, benchmark portfolio risk metrics, and identify statistical mean-reversion signals. Built with a focus on vectorized data processing and robust handling of asynchronous market states.
 
-> **Note:** Insert GIF and screenshot of the dashboard running here. *(e.g., `![Market Monitor Demo](assets/demo.gif)`)*
+<video controls src="assets/dashboard.mp4" title="The goat's Market Monitor"></video>
 
 ## 📊 Core Quantitative Features
 
@@ -17,6 +17,8 @@ A high-performance quantitative market analysis platform engineered to visualize
 Identifies divergence and convergence signals between correlated equities. 
 * Calculates a 50-day rolling Pearson correlation matrix.
 * Generates trading signals based on z-score normalization, plotting $2.0\sigma$ threshold bands to visualize potential arbitrage opportunities when the spread deviates from the historical mean.
+![Pairs Trading Correlation](assets/compare_feature.png)
+![Correlation Heatmap to visualize trends](assets/heatmap.png)
 
 ### 2. Market Microstructure & Technical Overlays
 An interactive, high-frequency charting engine built with Plotly Graph Objects. 
@@ -24,6 +26,7 @@ An interactive, high-frequency charting engine built with Plotly Graph Objects.
   $$UB = \mu + (2 \cdot \sigma)$$
   $$LB = \mu - (2 \cdot \sigma)$$
 * **Momentum & Volume Tracking:** Vectorized calculations for Relative Strength Index (RSI, 14-period), Exponential Moving Averages (EMA 9/21), and Volume Weighted Average Price (VWAP).
+![Display of Candlesticks and RSI Plot](assets/candlestick_graph_rsi.png)
 
 ### 3. Risk Management & Performance Benchmarking
 Automates the calculation of core portfolio metrics relative to the S&P 500 (SPY) baseline to evaluate risk-adjusted returns:
