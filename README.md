@@ -50,6 +50,6 @@ Financial data is inherently messy. This engine is specifically designed to hand
 Clone the repository and initialize the environment:
 
 ```bash
-git clone [https://github.com/](https://github.com/)[YourUsername]/[YourRepoName].git
-cd [YourRepoName]
+git clone [https://github.com/ketchupmann/Quant-Market-Monitor.git](https://github.com/ketchupmann/Quant-Market-Monitor.git)
+cd Quant-Market-Monitor
 pip install -r requirements.txt
