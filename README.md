@@ -9,7 +9,10 @@
 
 A high-performance quantitative market analysis platform engineered to visualize market microstructure, benchmark portfolio risk metrics, and identify statistical mean-reversion signals. Built with a focus on vectorized data processing and robust handling of asynchronous market states.
 
-<video controls src="assets/dashboard.mp4" title="The goat's Market Monitor"></video>
+
+https://github.com/user-attachments/assets/5f613f8d-154c-4cf8-a52d-50022b017eca
+
+
 
 ## 📊 Core Quantitative Features
 
