@@ -315,7 +315,7 @@ else:
     # --- Hover Templates ---
     if is_intraday:
         candle_hover = "<b>%{x|%b %d, %Y  %H:%M}</b><br><br>Open: $%{open:.2f}<br>High: $%{high:.2f}<br>Low: $%{low:.2f}<br>Close: $%{close:.2f}<extra></extra>"
-        volume_hover = "<b>%{x|%b %d, %Y  %H:%M}</b><br>Volume: %{y:,.0f}<extra></extra>"
+        volume_hover = "<b>%{x}</b><br>Volume: %{y:,.0f}<extra></extra>"
     else:
         candle_hover = "<b>%{x|%b %d, %Y}</b><br><br>Open: $%{open:.2f}<br>High: $%{high:.2f}<br>Low: $%{low:.2f}<br>Close: $%{close:.2f}<extra></extra>"
         volume_hover = "<b>%{x|%b %d, %Y}</b><br>Volume: %{y:,.0f}<extra></extra>"
