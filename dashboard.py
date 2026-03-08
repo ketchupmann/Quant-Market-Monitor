@@ -65,7 +65,6 @@ hr {
 </style>
 """, unsafe_allow_html=True)
 
-# --- CACHING API CALLS ---
 @st.cache_data(ttl=86400)
 def fetch_details(ticker):
     try:
@@ -88,9 +87,8 @@ ticker = st.sidebar.text_input("Stock Symbol", value="AAPL").strip().upper()
 
 if not ticker:
     st.markdown("---")
-    st.info("👋 **Welcome to the goat's Quantitative Market Monitor!** \n\nPlease enter a valid stock ticker symbol")
-    st.stop() # Silently stops the rest of the page from rendering
-
+    st.info("**Welcome to the goat's Quantitative Market Monitor!** \n\nPlease enter a valid stock ticker symbol")
+    st.stop() 
 timeframe = st.sidebar.selectbox(
     "Timeframe", 
     ["1 Day", "1 Week", "1 Month", "6 Months", "1 Year", "5 Years"],
@@ -118,6 +116,10 @@ for i in range(4):
 # HEADER & LIVE SNAPSHOT (TOP RIGHT)
 # ==========================================
 details = fetch_details(ticker)
+if details is None or empty:
+    st.sidebar.error(f"⚠️ Could not find data for '{ticker}'. Please check the symbol.")
+    st.warning(f"No market data available for **{ticker}**. It may be delisted or invalid.")
+    st.stop()
 snapshot = fetch_snapshot(ticker)
 
 # Create a master 2-column layout for the very top of the app
