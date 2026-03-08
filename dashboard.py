@@ -70,7 +70,6 @@ def fetch_details(ticker):
     try:
         return get_ticker_details(ticker)
     except Exception as e:
-        st.sidebar.error(f"Details error: {e}")
         return None
 
 @st.cache_data(ttl=60)
@@ -78,12 +77,11 @@ def fetch_snapshot(ticker):
     try:
         return get_snapshot_ticker(ticker)
     except Exception as e:
-        st.sidebar.error(f"Snapshot error: {e}")
         return None
 
 # --- SIDEBAR CONTROLS ---
-st.sidebar.header("🔍 Monitor Settings")
-ticker = st.sidebar.text_input("Stock Symbol", value="AAPL").strip().upper()
+st.sidebar.header("Monitor Settings")
+ticker = st.sidebar.text_input("Stock Symbol", value="SPY").strip().upper()
 
 if not ticker:
     st.markdown("---")
