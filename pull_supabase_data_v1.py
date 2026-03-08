@@ -67,23 +67,34 @@ def get_eod_ticker_data(
             needs_ingestion = True
             print(f"⚠️ No EOD data for {ticker}. Auto-ingesting from {fetch_start_date_str}...")
         else:
-            # SCENARIO 2: Ticker exists, but missing recent data
             oldest_record = pd.to_datetime(df['date']).min()
             newest_record = pd.to_datetime(df['date']).max()
             target_start = pd.to_datetime(start_date_str)
-            last_trading_day = (pd.Timestamp.now()).normalize()
             
-            if newest_record < last_trading_day:
-                needs_ingestion = True
-                fetch_start_date_str = newest_record.strftime('%Y-%m-%d') 
-                print(f"⚠️ Missing recent data. Updating strictly from {fetch_start_date_str} to today...")
+            # Calculate true last trading day to prevent infinite weekend loops
+            today_date = pd.Timestamp.now().normalize()
+            if today_date.dayofweek == 5: # Sat
+                last_trading_day = today_date - pd.Timedelta(days=1)
+            elif today_date.dayofweek == 6: # Sun
+                last_trading_day = today_date - pd.Timedelta(days=2)
+            else:
+                last_trading_day = today_date
+            
+            missing_historic = oldest_record > target_start + pd.Timedelta(days=5)
+            missing_recent = newest_record_clean < last_trading_day - pd.Timedelta(days=1)
 
-            # SCENARIO 3: Ticker exist but missing historic data 
+            # SCENARIO 2: Ticker exist but missing historic data 
             # 5-day buffer so weekends/holidays don't trigger infinite re-fetching
-            elif oldest_record > target_start + pd.Timedelta(days=5):
+            if missing_historic:
                 needs_ingestion = True
                 fetch_start_date_str = start_date_str 
                 print(f"⚠️ Missing historical data for {ticker}. Fetching backwards to {fetch_start_date_str}...")
+
+            # SCENARIO 3: Ticker exists, but missing recent data
+            elif missing_recent:
+                needs_ingestion = True
+                fetch_start_date_str = newest_record.strftime('%Y-%m-%d') 
+                print(f"⚠️ Missing recent data. Updating strictly from {fetch_start_date_str} to today...")
 
         if needs_ingestion:
             ingest_eod_data(ticker, fetch_start_date_str)
