@@ -142,7 +142,7 @@ with top_left:
         if details.get('website', '#'): 
             st.caption(f"**Exchange:** {details.get('exchange', 'N/A')} | **Market Cap:** {cap_str} | [Website]({details.get('website', '#')})")
         else:
-            st.caption(f"**Exchange:** {details.get('exchange', 'N/A')} | **Market Cap:** {cap_str}")
+            st.caption(f"**Exchange:** {details.get('exchange', 'N/A')} | **Market Cap:** {cap_str} ")
         
         if details.get('description'):
             with st.expander("About Company"):
@@ -591,79 +591,83 @@ basket_tickers = [ticker] + [t for t in hm_tickers if t != ticker]
 basket_tickers = list(dict.fromkeys(basket_tickers))
         
 if len(basket_tickers) > 1:
-    with st.spinner("Compiling matrix data..."):
-                
-        fetch_1_yr = (timeframe == "6 Months") 
-        fetch_5_yr = (timeframe in ["1 Year", "5 Years"]) 
-                
-        today = pd.Timestamp.now().normalize()
-        if timeframe == "6 Months":
-            target_start = today - pd.DateOffset(months=6)
-        elif timeframe == "1 Year":
-            target_start = today - pd.DateOffset(years=1)
-        else:
-            target_start = today - pd.DateOffset(years=5)
+    valid_hm_timeframes = ["6 Months", "1 Year", "5 Years"]
+    if timeframe not in valid_hm_timeframes:
+        st.info(f"**Correlation Heatmap requires a sample size 6 months or greater.")
+    else:
+        with st.spinner("Compiling matrix data..."):
+        
+            fetch_1_yr = (timeframe == "6 Months") 
+            fetch_5_yr = (timeframe in ["1 Year", "5 Years"]) 
+                    
+            today = pd.Timestamp.now().normalize()
+            if timeframe == "6 Months":
+                target_start = today - pd.DateOffset(months=6)
+            elif timeframe == "1 Year":
+                target_start = today - pd.DateOffset(years=1)
+            else:
+                target_start = today - pd.DateOffset(years=5)
 
-        close_prices = []
-        failed_tickers = []
-                
-        for t in basket_tickers:
-            t_df = get_eod_ticker_data(t, one_month=False, half_yr=False, one_yr=fetch_1_yr, five_yrs=fetch_5_yr)
-            if df is None or df.empty:
-                st.sidebar.error(f"Could not find data for '{t}'. Please check the symbol.")
-                st.warning(f"No market data available for **{t}**. It may be delisted or invalid.")
-                st.stop()
-            if t_df is not None and not t_df.empty and 'date' in t_df.columns:
-                
-                # Strip timezones and normalize to strictly dates to ensure perfect inner joins
-                t_df['date'] = pd.to_datetime(t_df['date'], utc=True).dt.tz_localize(None).dt.normalize()
-                t_df.set_index('date', inplace=True)
-                t_df.sort_index(inplace=True)
-                        
-                t_df = t_df[t_df.index >= target_start]
-                        
-                if 'close' in t_df.columns:
-                    close_series = t_df[['close']].copy()
-                    close_series.columns = [t]
-                    close_prices.append(close_series)
+            close_prices = []
+            failed_tickers = []
+                    
+            for t in basket_tickers:
+                t_df = get_eod_ticker_data(t, one_month=False, half_yr=False, one_yr=fetch_1_yr, five_yrs=fetch_5_yr)
+                if t_df is None or t_df.empty:
+                    st.sidebar.error(f"Could not find data for '{t}'. Please check the symbol.")
+                    st.warning(f"No market data available for **{t}**. It may be delisted or invalid.")
+                    st.stop()
+                if t_df is not None and not t_df.empty and 'date' in t_df.columns:
+                    
+                    # Strip timezones and normalize to strictly dates to ensure perfect inner joins
+                    t_df['date'] = pd.to_datetime(t_df['date'], utc=True).dt.tz_localize(None).dt.normalize()
+                    t_df.set_index('date', inplace=True)
+                    t_df.sort_index(inplace=True)
+                            
+                    t_df = t_df[t_df.index >= target_start]
+                            
+                    if 'close' in t_df.columns:
+                        close_series = t_df[['close']].copy()
+                        close_series.columns = [t]
+                        close_prices.append(close_series)
+                    else:
+                        failed_tickers.append(t)
                 else:
                     failed_tickers.append(t)
+                
+            if failed_tickers:
+                st.warning(f"Could not load data for: {', '.join(failed_tickers)}")
+
+            # Stitch and Calculate
+            if len(close_prices) > 1:
+                basket_df = pd.concat(close_prices, axis=1, join='inner')
+                
+                if basket_df.empty:
+                    st.error("Data alignment failed. The fetched tickers have no overlapping dates.")
+                else:
+                    basket_df = basket_df.astype('float64')
+                    
+                    corr_matrix = get_correlation_engine(basket_df)
+                    
+                    z_vals = np.round(corr_matrix.values, 2).astype('float64').tolist()
+                    x_vals = corr_matrix.columns.astype(str).tolist()
+                    y_vals = corr_matrix.index.astype(str).tolist()
+                            
+                    fig_heat = go.Figure(data=go.Heatmap(
+                        z=z_vals, x=x_vals, y=y_vals,
+                        colorscale='RdBu', zmin=-1, zmax=1,   
+                        text=z_vals, texttemplate="%{text}",
+                        textfont={"size": 14, "color": "white"}, hoverinfo="x+y+z"
+                    ))
+
+                    fig_heat.update_layout(
+                        template="plotly_dark", height=500 + (len(basket_tickers) * 20), 
+                        margin=dict(l=0, r=0, t=30, b=0), yaxis_autorange='reversed' 
+                    )
+
+                    heat_key = f"heat_{'_'.join(basket_tickers)}_{timeframe}"
+                    st.plotly_chart(fig_heat, use_container_width=True, key=heat_key)
             else:
-                failed_tickers.append(t)
-                
-        if failed_tickers:
-            st.warning(f"Could not load data for: {', '.join(failed_tickers)}")
-
-        # Stitch and Calculate
-        if len(close_prices) > 1:
-            basket_df = pd.concat(close_prices, axis=1, join='inner')
-            
-            if basket_df.empty:
-                st.error("Data alignment failed. The fetched tickers have no overlapping dates.")
-            else:
-                basket_df = basket_df.astype('float64')
-                
-                corr_matrix = get_correlation_engine(basket_df)
-                
-                z_vals = np.round(corr_matrix.values, 2).astype('float64').tolist()
-                x_vals = corr_matrix.columns.astype(str).tolist()
-                y_vals = corr_matrix.index.astype(str).tolist()
-                        
-                fig_heat = go.Figure(data=go.Heatmap(
-                    z=z_vals, x=x_vals, y=y_vals,
-                    colorscale='RdBu', zmin=-1, zmax=1,   
-                    text=z_vals, texttemplate="%{text}",
-                    textfont={"size": 14, "color": "white"}, hoverinfo="x+y+z"
-                ))
-
-                fig_heat.update_layout(
-                    template="plotly_dark", height=500 + (len(basket_tickers) * 20), 
-                    margin=dict(l=0, r=0, t=30, b=0), yaxis_autorange='reversed' 
-                )
-
-                heat_key = f"heat_{'_'.join(basket_tickers)}_{timeframe}"
-                st.plotly_chart(fig_heat, use_container_width=True, key=heat_key)
-        else:
-            st.info("Not enough valid tickers to generate a heatmap.")
+                st.info("Not enough valid tickers to generate a heatmap.")
 else:
     st.info("Add comparison tickers in the sidebar to generate the correlation heatmap.")
