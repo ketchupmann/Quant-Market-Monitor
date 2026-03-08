@@ -116,8 +116,8 @@ for i in range(4):
 # HEADER & LIVE SNAPSHOT (TOP RIGHT)
 # ==========================================
 details = fetch_details(ticker)
-if details is None or empty:
-    st.sidebar.error(f"⚠️ Could not find data for '{ticker}'. Please check the symbol.")
+if details is None:
+    st.sidebar.error(f"Could not find data for '{ticker}'. Please check the symbol.")
     st.warning(f"No market data available for **{ticker}**. It may be delisted or invalid.")
     st.stop()
 snapshot = fetch_snapshot(ticker)

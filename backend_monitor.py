@@ -46,8 +46,11 @@ def get_ticker_details(ticker: str) -> dict:
         A dictionary containing company details such as full name, market cap,
         primary exchange, description, and the URL to the company's logo.
     """
-    details = client.get_ticker_details(
-	ticker,)
+    try:
+        details = client.get_ticker_details(ticker)
+    except Exception as e:
+        return None
+        
     if details.branding:
         icon = details.branding.icon_url
     else:
