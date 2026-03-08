@@ -139,8 +139,10 @@ with top_left:
         
         market_cap = details.get('market_cap', 0)
         cap_str = f"${market_cap / 1e9:,.2f}B" if market_cap else "N/A"
-        
-        st.caption(f"**Exchange:** {details.get('exchange', 'N/A')} | **Market Cap:** {cap_str} | [Website]({details.get('website', '#')})")
+        if details.get('website', '#'): 
+            st.caption(f"**Exchange:** {details.get('exchange', 'N/A')} | **Market Cap:** {cap_str} | [Website]({details.get('website', '#')})")
+        else:
+            st.caption(f"**Exchange:** {details.get('exchange', 'N/A')} | **Market Cap:** {cap_str}")
         
         if details.get('description'):
             with st.expander("About Company"):
