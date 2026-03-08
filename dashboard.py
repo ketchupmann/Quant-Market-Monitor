@@ -609,6 +609,10 @@ if len(basket_tickers) > 1:
                 
         for t in basket_tickers:
             t_df = get_eod_ticker_data(t, one_month=False, half_yr=False, one_yr=fetch_1_yr, five_yrs=fetch_5_yr)
+            if df is None or df.empty:
+                st.sidebar.error(f"Could not find data for '{t}'. Please check the symbol.")
+                st.warning(f"No market data available for **{t}**. It may be delisted or invalid.")
+                st.stop()
             if t_df is not None and not t_df.empty and 'date' in t_df.columns:
                 
                 # Strip timezones and normalize to strictly dates to ensure perfect inner joins
@@ -637,12 +641,10 @@ if len(basket_tickers) > 1:
             if basket_df.empty:
                 st.error("Data alignment failed. The fetched tickers have no overlapping dates.")
             else:
-                # 💥 THE FIX: Ruthlessly force standard Python floats 
                 basket_df = basket_df.astype('float64')
                 
                 corr_matrix = get_correlation_engine(basket_df)
                 
-                # 💥 THE FIX: Ensure Plotly gets raw python lists and strings, not numpy objects
                 z_vals = np.round(corr_matrix.values, 2).astype('float64').tolist()
                 x_vals = corr_matrix.columns.astype(str).tolist()
                 y_vals = corr_matrix.index.astype(str).tolist()
