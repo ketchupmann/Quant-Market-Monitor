@@ -81,7 +81,7 @@ def get_eod_ticker_data(
                 last_trading_day = today_date
             
             missing_historic = oldest_record > target_start + pd.Timedelta(days=5)
-            missing_recent = newest_record_clean < last_trading_day - pd.Timedelta(days=1)
+            missing_recent = newest_record < last_trading_day - pd.Timedelta(days=1)
 
             # SCENARIO 2: Ticker exist but missing historic data 
             # 5-day buffer so weekends/holidays don't trigger infinite re-fetching
