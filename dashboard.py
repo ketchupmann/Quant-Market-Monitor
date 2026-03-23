@@ -330,10 +330,15 @@ else:
     if is_intraday:
         # Strip out extended hours strictly for Plotly
         chart_df = chart_df.between_time('09:30', '15:59')
+        
+        # FIX: Isolate only the most recent trading day for the "1 Day" timeframe
+        if timeframe == "1 Day" and not chart_df.empty:
+            latest_date = chart_df.index.date.max()
+            chart_df = chart_df[chart_df.index.date == latest_date]
+            
     else:
         # THE FIX 1: Shift daily data to 12:00 PM to avoid midnight weekend boundary collisions
         chart_df.index = chart_df.index + pd.Timedelta(hours=12)
-
     # ==========================================
     # PLOTLY X-AXIS (CATEGORICAL FIX)
     # ==========================================
