@@ -69,17 +69,21 @@ def ingest_minute_data(ticker: str, start_date: str) -> None:
     """
     df = get_historic_ticker_data(ticker, time_unit='minute', start_date=start_date)
     if df is None or df.empty:
-        raise ValueError(f"No minute data returned for {ticker} starting {start_date}.")
+        print(f"ℹNo new minute data found for {ticker} starting {start_date} (Market likely closed/Holiday).")
+        return
     
     df.reset_index(inplace=True) #reset timestamp to be just a column to prep for Supabase upload
     #rename column to match Supabase
-    final_df = df[['ticker', 'timestamp', 'open', 'high', 'low', 'close', 'volume', 'vwap', 'transactions']] 
+    final_df = df[['ticker', 'timestamp', 'open', 'high', 'low', 'close', 'volume', 'vwap', 'transactions']].copy() 
 
     final_df['timestamp'] = final_df['timestamp'].astype(str)
 
     data_payload = final_df.to_dict(orient='records') # converts to list of dict for upload
     # Upload
-    supabase.table('market_data_minute').upsert(data_payload).execute()
+    try:
+        supabase.table('market_data_minute').upsert(data_payload).execute()
+    except Exception as e:
+        print(f"Supabase upsert failed for {ticker}: {e}")
 
 
 def ingest_week_data(ticker, start_date): # start date is written as 'YYYY-MM-DD', only called by frontend as series of weekly for 5 yrs

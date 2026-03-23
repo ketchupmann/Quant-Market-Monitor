@@ -139,11 +139,26 @@ def get_minute_ticker_data(ticker: str, one_day: bool = False, one_week: bool = 
         A DataFrame with a DatetimeIndex and continuous 1-minute intervals.
     """
     now = datetime.now(timezone.utc)
+    if now.weekday() == 5: 
+        # It's Saturday -> Shift to Friday
+        anchor_date = now - timedelta(days=1)
+    elif now.weekday() == 6: 
+        # It's Sunday -> Shift to Friday
+        anchor_date = now - timedelta(days=2)
+    elif now.weekday() == 0 and now.hour < 9: 
+        # It's Monday before 9:00 AM -> Shift to Friday
+        anchor_date = now - timedelta(days=3)
+    elif now.hour < 9: 
+        # It's Tue-Fri before 9:00 AM -> Shift to Yesterday
+        anchor_date = now - timedelta(days=1)
+    else:
+        # Market is open (or closed for the evening but same day)
+        anchor_date = now
 
     if one_day:
-        start_date_obj = now - pd.Timedelta(days=1)
+        start_date_obj = anchor_date - pd.Timedelta(days=1)
     else:
-        start_date_obj = now - pd.Timedelta(days=7)
+        start_date_obj = anchor_date - pd.Timedelta(days=7)
     
     start_date = start_date_obj.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -168,13 +183,13 @@ def get_minute_ticker_data(ticker: str, one_day: bool = False, one_week: bool = 
         else:
             newest_record = pd.to_datetime(df['timestamp'], utc=True).max()
                 
-            # Check Forward Gap:
+            # Compare UTC to UTC directly
             if newest_record < now - pd.Timedelta(minutes=16):
                 needs_ingestion = True
-                newest_record_est = newest_record.tz_convert('US/Eastern')
                 
-                fetch_start_date_str = newest_record_est.strftime('%Y-%m-%d')
-                print(f"⚠️ Missing recent intraday data. Updating from {fetch_start_date_str}...")
+                # 3. Only convert to Eastern to create the string for the API fetch
+                fetch_start_date_str = newest_record.tz_convert('US/Eastern').strftime('%Y-%m-%d')
+                print(f"Missing recent intraday data. Updating from {fetch_start_date_str}...")
 
         if needs_ingestion:
             ingest_minute_data(ticker, fetch_start_date_str)
@@ -190,7 +205,7 @@ def get_minute_ticker_data(ticker: str, one_day: bool = False, one_week: bool = 
             df = pd.DataFrame(response.data)
             
             if df.empty:
-                print(f"❌ Auto-ingest failed for intraday {ticker}.")
+                print(f"Auto-ingest failed for intraday {ticker}.")
                 return pd.DataFrame()
         
         # clean up dataframe
