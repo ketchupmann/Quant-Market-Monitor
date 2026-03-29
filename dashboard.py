@@ -65,18 +65,30 @@ hr {
 </style>
 """, unsafe_allow_html=True)
 
-@st.cache_data(ttl=86400)
+@st.cache_data(ttl=86400, show_spinner=False)
+def _get_cached_details(ticker):
+    res = get_ticker_details(ticker)
+    if res is None:
+        raise ValueError("Invalid Ticker or Missing Data") # Prevents Streamlit from caching the failure!
+    return res
+
 def fetch_details(ticker):
     try:
-        return get_ticker_details(ticker)
-    except Exception as e:
+        return _get_cached_details(ticker)
+    except Exception:
         return None
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=60, show_spinner=False)
+def _get_cached_snapshot(ticker):
+    res = get_snapshot_ticker(ticker)
+    if res is None:
+        raise ValueError("Snapshot Missing")
+    return res
+
 def fetch_snapshot(ticker):
     try:
-        return get_snapshot_ticker(ticker)
-    except Exception as e:
+        return _get_cached_snapshot(ticker)
+    except Exception:
         return None
 
 # --- SIDEBAR CONTROLS ---
@@ -203,7 +215,8 @@ with st.spinner(f"Pulling {timeframe} data for {ticker}... (Auto-ingesting if ne
 # HISTORICAL CHARTING (NOW AT THE TOP)
 # ==========================================
 if df is None or df.empty:
-    st.error(f"Failed to load historical database records for {ticker}.")
+    st.warning(f"Historical data for **{ticker}** is missing or currently ingesting. Please wait a few seconds.")
+    st.stop() # <--- THE CRUCIAL FIX: Stops Risk/Pairs/Heatmap from spamming the backend!
 else:
     df = df.copy()
 
