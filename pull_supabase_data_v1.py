@@ -194,19 +194,32 @@ def get_minute_ticker_data(ticker: str, one_day: bool = False, one_week: bool = 
         if needs_ingestion:
             ingest_minute_data(ticker, fetch_start_date_str)
             
-            response = supabase.table('market_data_minute') \
-                .select("timestamp, open, high, low, close, volume, vwap, transactions") \
-                .eq('ticker', ticker) \
-                .gte('timestamp', start_date) \
-                .order('timestamp') \
-                .limit(100000) \
-                .execute()
-            
-            df = pd.DataFrame(response.data)
+            # --- START OF REPLACEMENT BLOCK ---
+            max_retries = 3
+            for attempt in range(max_retries):
+                # Give Supabase 1.5 seconds to index the newly inserted rows
+                time.sleep(1.5) 
+                
+                response = supabase.table('market_data_minute') \
+                    .select("timestamp, open, high, low, close, volume, vwap, transactions") \
+                    .eq('ticker', ticker) \
+                    .gte('timestamp', start_date) \
+                    .order('timestamp') \
+                    .limit(100000) \
+                    .execute()
+                
+                df = pd.DataFrame(response.data)
+                
+                if not df.empty:
+                    print(f"✅ Data successfully indexed and retrieved on attempt {attempt + 1}")
+                    break
+                else:
+                    print(f"⏳ Waiting for Supabase to index {ticker}... (Attempt {attempt + 1}/{max_retries})")
             
             if df.empty:
-                print(f"Auto-ingest failed for intraday {ticker}.")
+                print(f"ℹ️ Auto-ingest returned no new data for {ticker} (Likely a market holiday).")
                 return pd.DataFrame()
+            # --- END OF REPLACEMENT BLOCK ---
         
         # clean up dataframe
         df = df.drop_duplicates(subset='timestamp')
